@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>OBS Score A</title>
+  <link rel="stylesheet" href="/styles.css"/>
+  <style>body { background: transparent; margin: 0; padding: 12px; }</style>
+</head>
+<body class="obs-wrap">
+  <span class="obs-score" id="scoreA">0</span>
+  <script type="module">
+    import { getRoomId, connectWS } from '/client.js';
+    const el = document.getElementById('scoreA');
+    connectWS(getRoomId(), s => { el.textContent = s.scoreA; });
+  </script>
+</body>
+</html>

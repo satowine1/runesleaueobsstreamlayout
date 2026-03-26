@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+  <title>Tablet — OBS Overlay</title>
+  <link rel="stylesheet" href="/styles.css"/>
+  <style>
+    html, body {
+      height: 100%; overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    body {
+      display: grid;
+      grid-template-rows: 1fr auto 1fr;
+      height: 100dvh;
+      background: var(--bg);
+      gap: 0;
+    }
+
+    /* ── PLAYER HALVES ── */
+    .half {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Player B half is flipped 180° so both players face the device from opposite ends */
+    .half-b { transform: rotate(180deg); }
+
+    .half::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 100%, rgba(232,200,74,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .player-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text2);
+    }
+
+    .score-big {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 120px; font-weight: 900; line-height: 1;
+      letter-spacing: -2px;
+      color: var(--text);
+      transition: transform .1s;
+    }
+    .score-big.bump {
+      animation: scoreBump .25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes scoreBump {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    .score-buttons {
+      display: flex; gap: 14px;
+    }
+    .btn-half {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 32px; font-weight: 900;
+      padding: 18px 38px; border-radius: 18px;
+      cursor: pointer; border: none;
+      transition: transform .1s, filter .15s;
+      user-select: none; -webkit-user-select: none;
+    }
+    .btn-half:active { transform: scale(0.93); }
+
+    .btn-plus  { background: var(--accent);  color: #000; }
+    .btn-plus:hover  { filter: brightness(1.1); }
+    .btn-minus { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
+    .btn-minus:hover { background: var(--bg2); }
+
+    /* ── CENTER DIVIDER ── */
+    .center-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 0;
+      background: var(--bg1);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      z-index: 5;
+    }
+
+    .center-scores {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .center-score-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text2);
+    }
+    .center-score-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px; font-weight: 900;
+    }
+    .center-scores-b { justify-content: flex-end; }
+
+    .timer-center {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 0 20px;
+    }
+    .timer-display {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 44px; font-weight: 900; line-height: 1;
+      letter-spacing: 2px;
+    }
+    .timer-live-row {
+      display: flex; align-items: center; gap: 5px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--text2);
+    }
+    .timer-live-row.live { color: var(--red); }
+  </style>
+</head>
+<body>
+
+<!-- PLAYER A — top half -->
+<div class="half half-a" id="halfA">
+  <div class="player-name" id="nameA">PLAYER A</div>
+  <div class="score-big" id="scoreA">0</div>
+  <div class="score-buttons">
+    <button class="btn-half btn-minus" id="aMinusBtn">−</button>
+    <button class="btn-half btn-plus"  id="aPlusBtn">+</button>
+  </div>
+</div>
+
+<!-- CENTER BAR -->
+<div class="center-bar">
+  <div class="center-scores">
+    <span class="center-score-label" id="nameLabelA">A</span>
+    <span class="center-score-val" id="scoreMiniA">0</span>
+  </div>
+
+  <div class="timer-center">
+    <div class="timer-display" id="timerDisplay">00:00</div>
+    <div class="timer-live-row" id="timerLiveRow">
+      <span class="dot" id="timerDot"></span>
+      <span id="timerLiveLabel">PAUSE</span>
+    </div>
+  </div>
+
+  <div class="center-scores center-scores-b">
+    <span class="center-score-val" id="scoreMiniB">0</span>
+    <span class="center-score-label" id="nameLabelB">B</span>
+  </div>
+</div>
+
+<!-- PLAYER B — bottom half (rotated) -->
+<div class="half half-b" id="halfB">
+  <div class="player-name" id="nameB">PLAYER B</div>
+  <div class="score-big" id="scoreB">0</div>
+  <div class="score-buttons">
+    <button class="btn-half btn-minus" id="bMinusBtn">−</button>
+    <button class="btn-half btn-plus"  id="bPlusBtn">+</button>
+  </div>
+</div>
+
+<script type="module">
+import { getRoomId, connectWS, formatMs } from '/client.js';
+
+const roomId = getRoomId();
+
+const scoreAEl     = document.getElementById('scoreA');
+const scoreBEl     = document.getElementById('scoreB');
+const scoreMiniA   = document.getElementById('scoreMiniA');
+const scoreMiniB   = document.getElementById('scoreMiniB');
+const timerDispEl  = document.getElementById('timerDisplay');
+const timerLiveRow = document.getElementById('timerLiveRow');
+const timerDotEl   = document.getElementById('timerDot');
+const timerLiveLabel = document.getElementById('timerLiveLabel');
+const nameAEl      = document.getElementById('nameA');
+const nameBEl      = document.getElementById('nameB');
+const nameLabelA   = document.getElementById('nameLabelA');
+const nameLabelB   = document.getElementById('nameLabelB');
+
+let lastState = null;
+let localElapsedMs = 0;
+let prevScoreA = 0, prevScoreB = 0;
+
+function bump(el) {
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+}
+
+function renderState(state) {
+  if (state.scoreA !== prevScoreA) { bump(scoreAEl); prevScoreA = state.scoreA; }
+  if (state.scoreB !== prevScoreB) { bump(scoreBEl); prevScoreB = state.scoreB; }
+
+  scoreAEl.textContent  = state.scoreA;
+  scoreBEl.textContent  = state.scoreB;
+  scoreMiniA.textContent = state.scoreA;
+  scoreMiniB.textContent = state.scoreB;
+
+  localElapsedMs = state.timer.elapsedMs;
+  timerDispEl.textContent = formatMs(localElapsedMs);
+
+  const live = state.timer.running;
+  timerLiveLabel.textContent = live ? 'LIVE' : 'PAUSE';
+  timerLiveRow.classList.toggle('live', live);
+  timerDotEl.classList.toggle('live', live);
+
+  if (state.nameA) { nameAEl.textContent = state.nameA; nameLabelA.textContent = state.nameA; }
+  if (state.nameB) { nameBEl.textContent = state.nameB; nameLabelB.textContent = state.nameB; }
+}
+
+function tick() {
+  if (!lastState?.timer?.running) return;
+  localElapsedMs += 250;
+  timerDispEl.textContent = formatMs(localElapsedMs);
+}
+
+const ws = connectWS(roomId, state => { lastState = state; renderState(state); });
+
+document.getElementById('aPlusBtn').addEventListener('click',  () => ws.send('score:add', { who: 'A', delta:  1 }));
+document.getElementById('aMinusBtn').addEventListener('click', () => ws.send('score:add', { who: 'A', delta: -1 }));
+document.getElementById('bPlusBtn').addEventListener('click',  () => ws.send('score:add', { who: 'B', delta:  1 }));
+document.getElementById('bMinusBtn').addEventListener('click', () => ws.send('score:add', { who: 'B', delta: -1 }));
+
+setInterval(tick, 250);
+</script>
+</body>
+</html>

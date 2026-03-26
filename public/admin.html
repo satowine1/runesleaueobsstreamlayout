@@ -1,0 +1,412 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin — OBS Overlay</title>
+  <link rel="stylesheet" href="/styles.css"/>
+  <style>
+    body { min-height: 100vh; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg1);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    }
+    .links-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 20px;
+    }
+    @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* ── LEFT COLUMN ── */
+    .left-col { display: flex; flex-direction: column; gap: 14px; }
+
+    /* score section */
+    .score-row {
+      display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center;
+    }
+    .player-panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .player-panel .score-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 72px; font-weight: 900; line-height: 1;
+    }
+    .player-panel .score-btns { display: flex; gap: 8px; }
+    .score-vs {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px; font-weight: 900; color: var(--text2); letter-spacing: 2px;
+      text-align: center;
+    }
+    .player-name-input {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      text-align: center;
+      background: var(--bg1); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 6px 10px; color: var(--text);
+      width: 100%; outline: none; transition: border-color .15s;
+    }
+    .player-name-input:focus { border-color: var(--accent); }
+
+    /* timer section */
+    .timer-panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .timer-display-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+    }
+    .timer-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 60px; font-weight: 900; line-height: 1; flex: 1;
+    }
+    .timer-state-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 999px;
+      border: 1px solid var(--border2);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text2);
+    }
+    .timer-state-badge.live { border-color: var(--red); color: var(--red); }
+
+    .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .timer-preset-row {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center;
+    }
+    .timer-preset-row .label { white-space: nowrap; }
+    .timer-set-input {
+      width: 90px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px; font-weight: 700; letter-spacing: 1px;
+      text-align: center;
+      background: var(--bg1); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 7px 10px; color: var(--text);
+      outline: none; transition: border-color .15s;
+    }
+    .timer-set-input:focus { border-color: var(--accent); }
+
+    /* highlight section */
+    .highlight-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    .highlight-active {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(232,200,74,0.08);
+      border: 1px solid rgba(232,200,74,0.25);
+      border-radius: 10px;
+      padding: 8px 12px; margin-bottom: 12px;
+    }
+    .highlight-active img {
+      width: 34px; height: 46px; object-fit: cover;
+      border-radius: 4px; border: 1px solid var(--border);
+    }
+    .highlight-active .hl-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px; font-weight: 700; letter-spacing: 0.5px;
+    }
+    #hlActiveWrap { display: none; }
+
+    /* ── RIGHT COLUMN ── */
+    .right-col { display: flex; flex-direction: column; gap: 14px; }
+    .search-wrap { position: relative; }
+    .search-wrap input { padding-left: 36px; }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--text2); font-size: 14px; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">Admin</div>
+    <div class="badge accent" id="roomBadge">—</div>
+  </div>
+  <div class="links-row" id="linksRow"></div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+
+  <!-- ── LEFT ── -->
+  <div class="left-col">
+
+    <!-- SCORE -->
+    <div class="panel">
+      <div class="label" style="margin-bottom:12px;">Punteggio</div>
+      <div class="score-row">
+        <!-- Player A -->
+        <div class="player-panel">
+          <input class="player-name-input" id="nameA" value="PLAYER A" placeholder="Nome A"/>
+          <div class="score-val" id="scoreA">0</div>
+          <div class="score-btns">
+            <button class="btn-score btn-danger" id="aMinus">−</button>
+            <button class="btn-score btn-accent" id="aPlus">+</button>
+          </div>
+        </div>
+
+        <div class="score-vs">VS</div>
+
+        <!-- Player B -->
+        <div class="player-panel">
+          <input class="player-name-input" id="nameB" value="PLAYER B" placeholder="Nome B"/>
+          <div class="score-val" id="scoreB">0</div>
+          <div class="score-btns">
+            <button class="btn-score btn-danger" id="bMinus">−</button>
+            <button class="btn-score btn-accent" id="bPlus">+</button>
+          </div>
+        </div>
+      </div>
+      <hr class="sep"/>
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="btn-danger" id="resetScore">Reset punteggio</button>
+      </div>
+    </div>
+
+    <!-- TIMER -->
+    <div class="timer-panel">
+      <div class="label" style="margin-bottom:12px;">Timer</div>
+      <div class="timer-display-row">
+        <div class="timer-val" id="timerVal">00:00</div>
+        <div class="timer-state-badge" id="timerStateBadge">
+          <span class="dot" id="timerDot"></span>
+          <span id="timerStateLabel">Pause</span>
+        </div>
+      </div>
+      <div class="timer-controls">
+        <button class="btn-accent" id="tStart">▶ Start</button>
+        <button id="tPause">⏸ Pause</button>
+        <button class="btn-danger" id="tReset">↺ Reset</button>
+      </div>
+      <div class="timer-preset-row">
+        <span class="label">Imposta:</span>
+        <input class="timer-set-input" id="timerSetInput" type="text" value="00:00" placeholder="MM:SS"/>
+        <button id="tSetBtn">Applica</button>
+      </div>
+    </div>
+
+    <!-- HIGHLIGHT ACTIVE -->
+    <div class="panel">
+      <div class="highlight-header">
+        <div class="label">Highlight attivo</div>
+        <button class="btn-danger" id="clearHL">Rimuovi</button>
+      </div>
+      <div id="hlActiveWrap" class="highlight-active">
+        <img id="hlActiveImg" src="" alt=""/>
+        <div>
+          <div class="hl-name" id="hlActiveName">—</div>
+          <div class="badge" id="hlActiveId">—</div>
+        </div>
+      </div>
+      <div id="hlNoneLabel" style="color:var(--text2); font-size:13px;">(nessuna carta selezionata)</div>
+    </div>
+
+  </div>
+
+  <!-- ── RIGHT ── -->
+  <div class="right-col">
+    <div class="panel" style="flex:1;">
+      <div class="label" style="margin-bottom:12px;">Carte</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="search" type="search" placeholder="Cerca per nome o ID…"/>
+      </div>
+      <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { getRoomId, connectWS, formatMs } from '/client.js';
+
+const roomId = getRoomId();
+document.getElementById('roomBadge').textContent = roomId;
+
+// ── Links ──
+const links = [
+  { id: 'linkTimer',   label: 'Timer src',    path: 'obs-timer.html' },
+  { id: 'linkScoreA',  label: 'Score A',      path: 'obs-scoreA.html' },
+  { id: 'linkScoreB',  label: 'Score B',      path: 'obs-scoreB.html' },
+  { id: 'linkHL',      label: 'Highlight src',path: 'obs-highlight.html' },
+  { id: 'linkTablet',  label: 'Tablet',       path: 'tablet.html' },
+];
+const linksRow = document.getElementById('linksRow');
+for (const l of links) {
+  const a = document.createElement('a');
+  a.className = 'link-badge'; a.target = '_blank';
+  a.href = `/${l.path}?room=${encodeURIComponent(roomId)}`;
+  a.textContent = l.label;
+  linksRow.appendChild(a);
+}
+
+// ── State ──
+let cards = [], cardsById = new Map(), lastState = null, localElapsedMs = 0;
+
+// ── Elements ──
+const scoreAEl       = document.getElementById('scoreA');
+const scoreBEl       = document.getElementById('scoreB');
+const timerValEl     = document.getElementById('timerVal');
+const timerStateEl   = document.getElementById('timerStateLabel');
+const timerBadgeEl   = document.getElementById('timerStateBadge');
+const timerDotEl     = document.getElementById('timerDot');
+const hlActiveWrap   = document.getElementById('hlActiveWrap');
+const hlNoneLabel    = document.getElementById('hlNoneLabel');
+const hlActiveImg    = document.getElementById('hlActiveImg');
+const hlActiveName   = document.getElementById('hlActiveName');
+const hlActiveId     = document.getElementById('hlActiveId');
+const cardsGrid      = document.getElementById('cardsGrid');
+const nameAEl        = document.getElementById('nameA');
+const nameBEl        = document.getElementById('nameB');
+
+// ── Cards ──
+async function loadCards() {
+  const res = await fetch('/api/cards');
+  cards = await res.json();
+  cardsById = new Map(cards.map(c => [c.id, c]));
+  renderCards(cards);
+}
+
+function renderCards(list) {
+  cardsGrid.innerHTML = '';
+  for (const c of list) {
+    const div = document.createElement('div');
+    div.className = 'card-item';
+    div.dataset.id = c.id;
+    div.innerHTML = `
+      <img src="${c.image}" alt="">
+      <div>
+        <div class="card-name">${c.name}</div>
+        <div class="card-id">${c.id}</div>
+      </div>`;
+    div.addEventListener('click', () => ws.send('highlight:set', { cardId: c.id }));
+    cardsGrid.appendChild(div);
+  }
+}
+
+function updateCardSelection(cardId) {
+  document.querySelectorAll('.card-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === cardId);
+  });
+}
+
+// ── Render state ──
+function renderState(state) {
+  scoreAEl.textContent = state.scoreA;
+  scoreBEl.textContent = state.scoreB;
+
+  localElapsedMs = state.timer.elapsedMs;
+  timerValEl.textContent = formatMs(localElapsedMs);
+
+  const live = state.timer.running;
+  timerStateEl.textContent = live ? 'Live' : 'Pause';
+  timerBadgeEl.classList.toggle('live', live);
+  timerDotEl.classList.toggle('live', live);
+
+  const card = state.highlightCardId ? cardsById.get(state.highlightCardId) : null;
+  if (card) {
+    hlActiveWrap.style.display = 'flex';
+    hlNoneLabel.style.display = 'none';
+    hlActiveImg.src = card.image;
+    hlActiveName.textContent = card.name;
+    hlActiveId.textContent = card.id;
+  } else {
+    hlActiveWrap.style.display = 'none';
+    hlNoneLabel.style.display = 'block';
+  }
+  updateCardSelection(state.highlightCardId);
+
+  // sync player names if server sends them
+  if (state.nameA && !nameAEl.matches(':focus')) nameAEl.value = state.nameA;
+  if (state.nameB && !nameBEl.matches(':focus')) nameBEl.value = state.nameB;
+}
+
+function tick() {
+  if (!lastState?.timer?.running) return;
+  localElapsedMs += 250;
+  timerValEl.textContent = formatMs(localElapsedMs);
+}
+
+// ── WS ──
+const ws = connectWS(roomId, state => { lastState = state; renderState(state); });
+
+// ── Score buttons ──
+document.getElementById('aPlus').onclick  = () => ws.send('score:add', { who: 'A', delta:  1 });
+document.getElementById('aMinus').onclick = () => ws.send('score:add', { who: 'A', delta: -1 });
+document.getElementById('bPlus').onclick  = () => ws.send('score:add', { who: 'B', delta:  1 });
+document.getElementById('bMinus').onclick = () => ws.send('score:add', { who: 'B', delta: -1 });
+document.getElementById('resetScore').onclick = () => ws.send('score:reset');
+
+// ── Timer buttons ──
+document.getElementById('tStart').onclick = () => ws.send('timer:start');
+document.getElementById('tPause').onclick = () => ws.send('timer:pause');
+document.getElementById('tReset').onclick = () => ws.send('timer:reset');
+
+// Timer set (MM:SS)
+document.getElementById('tSetBtn').onclick = () => {
+  const raw = document.getElementById('timerSetInput').value.trim();
+  const parts = raw.split(':');
+  let ms = 0;
+  if (parts.length === 2) {
+    ms = (parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10)) * 1000;
+  } else {
+    ms = parseInt(raw, 10) * 1000;
+  }
+  if (!isNaN(ms) && ms >= 0) ws.send('timer:set', { elapsedMs: ms });
+};
+
+// ── Highlight ──
+document.getElementById('clearHL').onclick = () => ws.send('highlight:set', { cardId: null });
+
+// ── Player names — send on blur/enter ──
+function sendNames() {
+  ws.send('player:names', { nameA: nameAEl.value, nameB: nameBEl.value });
+}
+nameAEl.addEventListener('blur', sendNames);
+nameAEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameAEl.blur(); }});
+nameBEl.addEventListener('blur', sendNames);
+nameBEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameBEl.blur(); }});
+
+// ── Search ──
+document.getElementById('search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  renderCards(q ? cards.filter(c => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)) : cards);
+});
+
+// ── Keyboard shortcuts ──
+window.addEventListener('keydown', e => {
+  if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return;
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (lastState?.timer?.running) ws.send('timer:pause'); else ws.send('timer:start');
+  }
+  if (e.key === 'r' || e.key === 'R') ws.send('timer:reset');
+});
+
+await loadCards();
+setInterval(tick, 250);
+</script>
+</body>
+</html>
