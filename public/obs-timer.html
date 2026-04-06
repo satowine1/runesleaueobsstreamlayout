@@ -8,17 +8,6 @@
 </head>
 <body class="obs-wrap">
   <span class="obs-timer" id="timer">00:00</span>
-  <script type="module">
-    import { getRoomId, connectWS, formatMs } from '/client.js';
-    const el = document.getElementById('timer');
-    let lastState = null, localMs = 0;
-    function tick() {
-      if (lastState?.timer?.running) { localMs += 250; el.textContent = formatMs(localMs); }
-    }
-    connectWS(getRoomId(), s => {
-      lastState = s; localMs = s.timer.elapsedMs; el.textContent = formatMs(localMs);
-    });
-    setInterval(tick, 250);
-  </script>
+  <script type="module" src="/js/obs-timer.js"></script>
 </body>
 </html>

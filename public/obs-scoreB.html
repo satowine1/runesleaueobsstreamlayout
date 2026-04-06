@@ -8,10 +8,6 @@
 </head>
 <body class="obs-wrap">
   <span class="obs-score" id="scoreB">0</span>
-  <script type="module">
-    import { getRoomId, connectWS } from '/client.js';
-    const el = document.getElementById('scoreB');
-    connectWS(getRoomId(), s => { el.textContent = s.scoreB; });
-  </script>
+  <script type="module" src="/js/obs-scoreB.js"></script>
 </body>
 </html>
