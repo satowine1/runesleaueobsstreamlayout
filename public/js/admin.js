@@ -1,15 +1,16 @@
 import { getRoomId, connectWS, formatMs } from '/client.js';
+import axios from '/vendor/esm/axios.min.js';
 
 const roomId = getRoomId();
 document.getElementById('roomBadge').textContent = roomId;
 
 // ── Links ──
 const links = [
-  { id: 'linkTimer',   label: 'Timer src',    path: 'obs-timer.html' },
-  { id: 'linkScoreA',  label: 'Score A',      path: 'obs-scoreA.html' },
-  { id: 'linkScoreB',  label: 'Score B',      path: 'obs-scoreB.html' },
-  { id: 'linkHL',      label: 'Highlight src',path: 'obs-highlight.html' },
-  { id: 'linkTablet',  label: 'Tablet',       path: 'tablet.html' },
+  { label: 'Timer src',     path: 'obs-timer.html' },
+  { label: 'Score A',       path: 'obs-scoreA.html' },
+  { label: 'Score B',       path: 'obs-scoreB.html' },
+  { label: 'Highlight src', path: 'obs-highlight.html' },
+  { label: 'Tablet',        path: 'tablet.html' },
 ];
 const linksRow = document.getElementById('linksRow');
 for (const l of links) {
@@ -21,7 +22,7 @@ for (const l of links) {
 }
 
 // ── State ──
-let cards = [], cardsById = new Map(), lastState = null, localElapsedMs = 0;
+let lastState = null, localElapsedMs = 0;
 
 // ── Elements ──
 const scoreAEl       = document.getElementById('scoreA');
@@ -38,15 +39,46 @@ const hlActiveId     = document.getElementById('hlActiveId');
 const cardsGrid      = document.getElementById('cardsGrid');
 const nameAEl        = document.getElementById('nameA');
 const nameBEl        = document.getElementById('nameB');
+const searchInput    = document.getElementById('searchInput');
+const searchBtn      = document.getElementById('searchBtn');
+const searchStatusEl = document.getElementById('searchStatus');
 
-// ── Cards ──
-async function loadCards() {
-  const res = await fetch('/api/cards');
-  cards = await res.json();
-  cardsById = new Map(cards.map(c => [c.id, c]));
-  renderCards(cards);
+// ── Riftcodex search ──
+async function searchCards(query) {
+  const q = query.trim();
+  if (!q) return;
+  searchStatusEl.textContent = 'Ricerca in corso…';
+  searchBtn.disabled = true;
+  cardsGrid.innerHTML = '';
+  try {
+    const { data } = await axios.get('https://api.riftcodex.com/cards/name', {
+      params: { fuzzy: q, size: 20 }
+    });
+    const items = (data.items || []).map(c => ({
+      id:          c.id,
+      name:        c.name,
+      image:       c.media?.image_url ?? '',
+      riftboundId: c.riftbound_id ?? '',
+      type:        c.classification?.type ?? ''
+    }));
+    if (items.length === 0) {
+      searchStatusEl.textContent = 'Nessuna carta trovata.';
+    } else {
+      const shown = items.length;
+      const total = data.total ?? shown;
+      searchStatusEl.textContent = total > shown
+        ? `Mostrate ${shown} di ${total} carte`
+        : `${shown} carta${shown !== 1 ? 'e' : ''} trovata${shown !== 1 ? '' : ''}`;
+    }
+    renderCards(items);
+  } catch {
+    searchStatusEl.textContent = 'Errore durante la ricerca.';
+  } finally {
+    searchBtn.disabled = false;
+  }
 }
 
+// ── Card grid ──
 function renderCards(list) {
   cardsGrid.innerHTML = '';
   for (const c of list) {
@@ -57,11 +89,19 @@ function renderCards(list) {
       <img src="${c.image}" alt="">
       <div>
         <div class="card-name">${c.name}</div>
-        <div class="card-id">${c.id}</div>
+        <div class="card-id">${c.riftboundId || c.type}</div>
       </div>`;
-    div.addEventListener('click', () => ws.send('highlight:set', { cardId: c.id }));
+    div.addEventListener('click', () => {
+      ws.send('highlight:set', {
+        cardId:          c.id,
+        cardName:        c.name,
+        cardImage:       c.image,
+        cardRiftboundId: c.riftboundId
+      });
+    });
     cardsGrid.appendChild(div);
   }
+  updateCardSelection(lastState?.highlightCard?.id ?? null);
 }
 
 function updateCardSelection(cardId) {
@@ -83,20 +123,19 @@ function renderState(state) {
   timerBadgeEl.classList.toggle('live', live);
   timerDotEl.classList.toggle('live', live);
 
-  const card = state.highlightCardId ? cardsById.get(state.highlightCardId) : null;
+  const card = state.highlightCard ?? null;
   if (card) {
     hlActiveWrap.style.display = 'flex';
     hlNoneLabel.style.display = 'none';
     hlActiveImg.src = card.image;
     hlActiveName.textContent = card.name;
-    hlActiveId.textContent = card.id;
+    hlActiveId.textContent = card.riftboundId || card.id;
   } else {
     hlActiveWrap.style.display = 'none';
     hlNoneLabel.style.display = 'block';
   }
-  updateCardSelection(state.highlightCardId);
+  updateCardSelection(card?.id ?? null);
 
-  // sync player names if server sends them
   if (state.nameA && !nameAEl.matches(':focus')) nameAEl.value = state.nameA;
   if (state.nameB && !nameBEl.matches(':focus')) nameBEl.value = state.nameB;
 }
@@ -122,7 +161,6 @@ document.getElementById('tStart').onclick = () => ws.send('timer:start');
 document.getElementById('tPause').onclick = () => ws.send('timer:pause');
 document.getElementById('tReset').onclick = () => ws.send('timer:reset');
 
-// Timer set (MM:SS)
 document.getElementById('tSetBtn').onclick = () => {
   const raw = document.getElementById('timerSetInput').value.trim();
   const parts = raw.split(':');
@@ -138,20 +176,18 @@ document.getElementById('tSetBtn').onclick = () => {
 // ── Highlight ──
 document.getElementById('clearHL').onclick = () => ws.send('highlight:set', { cardId: null });
 
-// ── Player names — send on blur/enter ──
+// ── Player names ──
 function sendNames() {
   ws.send('player:names', { nameA: nameAEl.value, nameB: nameBEl.value });
 }
 nameAEl.addEventListener('blur', sendNames);
-nameAEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameAEl.blur(); }});
+nameAEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameAEl.blur(); } });
 nameBEl.addEventListener('blur', sendNames);
-nameBEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameBEl.blur(); }});
+nameBEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameBEl.blur(); } });
 
 // ── Search ──
-document.getElementById('search').addEventListener('input', e => {
-  const q = e.target.value.trim().toLowerCase();
-  renderCards(q ? cards.filter(c => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)) : cards);
-});
+searchBtn.addEventListener('click', () => searchCards(searchInput.value));
+searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchCards(searchInput.value); });
 
 // ── Keyboard shortcuts ──
 window.addEventListener('keydown', e => {
@@ -163,5 +199,4 @@ window.addEventListener('keydown', e => {
   if (e.key === 'r' || e.key === 'R') ws.send('timer:reset');
 });
 
-await loadCards();
 setInterval(tick, 250);

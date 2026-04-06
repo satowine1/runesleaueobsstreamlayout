@@ -128,12 +128,15 @@
 
     /* ── RIGHT COLUMN ── */
     .right-col { display: flex; flex-direction: column; gap: 14px; }
+    .search-form { display: flex; gap: 8px; margin-bottom: 8px; }
+    .search-form .search-wrap { flex: 1; }
     .search-wrap { position: relative; }
     .search-wrap input { padding-left: 36px; }
     .search-icon {
       position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
       color: var(--text2); font-size: 14px; pointer-events: none;
     }
+    .search-status { font-size: 12px; color: var(--text2); min-height: 16px; margin-bottom: 6px; }
   </style>
 </head>
 <body>
@@ -228,11 +231,15 @@
   <!-- ── RIGHT ── -->
   <div class="right-col">
     <div class="panel" style="flex:1;">
-      <div class="label" style="margin-bottom:12px;">Carte</div>
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input id="search" type="search" placeholder="Cerca per nome o ID…"/>
+      <div class="label" style="margin-bottom:12px;">Cerca carte</div>
+      <div class="search-form">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input id="searchInput" type="search" placeholder="Nome carta…"/>
+        </div>
+        <button class="btn-accent" id="searchBtn">Cerca</button>
       </div>
+      <div class="search-status" id="searchStatus"></div>
       <div class="cards-grid" id="cardsGrid"></div>
     </div>
   </div>

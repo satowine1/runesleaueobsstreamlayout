@@ -2,7 +2,6 @@
 import express from 'express';
 import http from 'http';
 import { WebSocketServer } from 'ws';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -23,18 +22,12 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/vendor', express.static(path.join(__dirname, 'node_modules/axios/dist')));
 
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server });
 
 const rooms = new Map();
-
-// Load cards once at startup
-const cardsPath = path.join(__dirname, 'public', 'cards.json');
-let CARDS = [];
-try { CARDS = JSON.parse(fs.readFileSync(cardsPath, 'utf8')); } catch { CARDS = []; }
-
-app.get('/api/cards', (_, res) => res.json(CARDS));
 
 function ensureRoom(roomId) {
   if (!rooms.has(roomId)) {
@@ -46,13 +39,13 @@ function ensureRoom(roomId) {
 function roomSnapshot(roomId) {
   const { state: s } = ensureRoom(roomId);
   return {
-    type:            'state',
+    type:          'state',
     roomId,
-    scoreA:          s.scoreA,
-    scoreB:          s.scoreB,
-    nameA:           s.nameA,
-    nameB:           s.nameB,
-    highlightCardId: s.highlightCardId,
+    scoreA:        s.scoreA,
+    scoreB:        s.scoreB,
+    nameA:         s.nameA,
+    nameB:         s.nameB,
+    highlightCard: s.highlightCard,
     timer: {
       running:   s.timer.running,
       elapsedMs: getElapsedMs(s.timer)
@@ -112,9 +105,19 @@ wss.on('connection', (ws, req) => {
         broadcast(roomId); break;
       }
       case 'highlight:set': {
-        const id = msg.cardId ?? null;
-        if (id === null) { state.highlightCardId = null; broadcast(roomId); break; }
-        if (CARDS.some(c => c.id === id)) { state.highlightCardId = id; broadcast(roomId); }
+        const cardId = msg.cardId ?? null;
+        if (cardId === null) {
+          state.highlightCard = null;
+          broadcast(roomId);
+          break;
+        }
+        state.highlightCard = {
+          id:          String(cardId).slice(0, 100),
+          name:        typeof msg.cardName === 'string'        ? msg.cardName.slice(0, 100)        : '',
+          image:       typeof msg.cardImage === 'string'       ? msg.cardImage.slice(0, 500)       : '',
+          riftboundId: typeof msg.cardRiftboundId === 'string' ? msg.cardRiftboundId.slice(0, 50)  : ''
+        };
+        broadcast(roomId);
         break;
       }
       default: break;
