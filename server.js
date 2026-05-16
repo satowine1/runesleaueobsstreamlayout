@@ -4,6 +4,7 @@ import http from 'http';
 import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import axios from 'axios';
 
 import {
   createRoomState,
@@ -23,6 +24,27 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/vendor', express.static(path.join(__dirname, 'node_modules/axios/dist')));
+
+// ── RiftScribe proxy (evita CORS dal browser) ──
+const RIFTSCRIBE = 'https://riftscribe.gg';
+
+app.get('/api/proxy/cards/filters', async (_req, res) => {
+  try {
+    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/filters`);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+  }
+});
+
+app.get('/api/proxy/cards', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards`, { params: req.query });
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+  }
+});
 
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server });

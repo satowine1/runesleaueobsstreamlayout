@@ -42,33 +42,53 @@ const nameBEl        = document.getElementById('nameB');
 const searchInput    = document.getElementById('searchInput');
 const searchBtn      = document.getElementById('searchBtn');
 const searchStatusEl = document.getElementById('searchStatus');
+const filterSetEl    = document.getElementById('filterSet');
+const filterFactionEl = document.getElementById('filterFaction');
 
-// ── Riftcodex search ──
+// ── RiftScribe filters ──
+async function loadFilters() {
+  try {
+    const { data } = await axios.get('/api/proxy/cards/filters');
+    for (const s of (data.sets || [])) {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      filterSetEl.appendChild(opt);
+    }
+    for (const f of (data.factions || [])) {
+      const opt = document.createElement('option');
+      opt.value = f; opt.textContent = f;
+      filterFactionEl.appendChild(opt);
+    }
+  } catch { /* silently fail */ }
+}
+
+// ── RiftScribe search ──
 async function searchCards(query) {
   const q = query.trim();
-  if (!q) return;
+  const setId   = filterSetEl.value;
+  const faction = filterFactionEl.value;
+  if (!q && !setId && !faction) return;
   searchStatusEl.textContent = 'Ricerca in corso…';
   searchBtn.disabled = true;
   cardsGrid.innerHTML = '';
   try {
-    const { data } = await axios.get('https://api.riftcodex.com/cards/name', {
-      params: { fuzzy: q, size: 20 }
-    });
-    const items = (data.items || []).map(c => ({
+    const params = { limit: 20 };
+    if (q)       params.q       = q;
+    if (setId)   params.set_id  = setId;
+    if (faction) params.faction = faction;
+    const { data } = await axios.get('/api/proxy/cards', { params });
+    const items = (data || []).map(c => ({
       id:          c.id,
       name:        c.name,
-      image:       c.media?.image_url ?? '',
-      riftboundId: c.riftbound_id ?? '',
-      type:        c.classification?.type ?? ''
+      image:       c.image_thumb?.medium ?? c.image_thumb?.small ?? '',
+      riftboundId: c.set_id && c.collector_number ? `${c.set_id}-${String(c.collector_number).padStart(3,'0')}` : (c.set_id ?? ''),
+      type:        c.type ?? ''
     }));
     if (items.length === 0) {
       searchStatusEl.textContent = 'Nessuna carta trovata.';
     } else {
       const shown = items.length;
-      const total = data.total ?? shown;
-      searchStatusEl.textContent = total > shown
-        ? `Mostrate ${shown} di ${total} carte`
-        : `${shown} carta${shown !== 1 ? 'e' : ''} trovata${shown !== 1 ? '' : ''}`;
+      searchStatusEl.textContent = `${shown} carta${shown !== 1 ? 'e' : ''} trovata${shown !== 1 ? '' : ''}`;
     }
     renderCards(items);
   } catch {
@@ -186,6 +206,7 @@ nameBEl.addEventListener('blur', sendNames);
 nameBEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameBEl.blur(); } });
 
 // ── Search ──
+loadFilters();
 searchBtn.addEventListener('click', () => searchCards(searchInput.value));
 searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchCards(searchInput.value); });
 
