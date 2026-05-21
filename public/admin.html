@@ -150,6 +150,9 @@
     }
     .search-filters select:focus { border-color: var(--accent); }
     .search-filters select option { background: var(--bg1); }
+    .mode-row { display: flex; gap: 6px; }
+    .btn-mode { flex: 1; padding: 8px 12px; font-size: 13px; }
+    .btn-mode.active { background: var(--accent); border-color: var(--accent); color: #000; }
   </style>
 </head>
 <body>
@@ -237,6 +240,13 @@
         </div>
       </div>
       <div id="hlNoneLabel" style="color:var(--text2); font-size:13px;">(nessuna carta selezionata)</div>
+      <hr class="sep"/>
+      <div class="label" style="margin-bottom:8px;">Modalità overlay</div>
+      <div class="mode-row">
+        <button class="btn-mode" data-mode="tooltip">Tooltip</button>
+        <button class="btn-mode" data-mode="card">Card</button>
+        <button class="btn-mode" data-mode="detail">Detail</button>
+      </div>
     </div>
 
   </div>
@@ -256,8 +266,11 @@
         <select id="filterSet">
           <option value="">Tutti i set</option>
         </select>
-        <select id="filterFaction">
+        <select id="filterFaction1">
           <option value="">Tutte le fazioni</option>
+        </select>
+        <select id="filterFaction2">
+          <option value="">—</option>
         </select>
       </div>
       <div class="search-status" id="searchStatus"></div>

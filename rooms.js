@@ -6,6 +6,7 @@ export function createRoomState() {
     nameA: 'Player A',
     nameB: 'Player B',
     highlightCard: null,
+    highlightMode: 'card',
     timer: {
       running: false,
       startEpochMs: null,

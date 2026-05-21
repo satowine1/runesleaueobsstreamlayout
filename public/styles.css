@@ -254,3 +254,51 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
   letter-spacing: 1px; text-transform: uppercase;
   color: #fff; line-height: 1;
 }
+
+/* ── Card-only mode ── */
+.obs-hl-card-only {
+  display: inline-block;
+  border-radius: 18px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 8px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  animation: hlIn .45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.obs-hl-card-only img { width: 280px; display: block; }
+
+/* ── Detail mode extras ── */
+.obs-hl-info.detail {
+  min-width: 280px; max-width: 320px;
+  gap: 8px;
+}
+.obs-hl-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.obs-hl-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.2); color: var(--text2);
+}
+.obs-hl-stats { display: flex; gap: 14px; }
+.obs-hl-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.obs-hl-stat-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px; font-weight: 900; color: #fff; line-height: 1;
+}
+.obs-hl-stat-lbl {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text2);
+}
+.obs-hl-keywords { display: flex; gap: 4px; flex-wrap: wrap; }
+.obs-hl-keyword {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 4px;
+  background: rgba(232,200,74,0.15); color: var(--accent);
+  border: 1px solid rgba(232,200,74,0.3);
+}
+.obs-hl-description {
+  font-size: 13px; line-height: 1.55; color: var(--text);
+}
+.obs-hl-flavor {
+  font-size: 11px; font-style: italic; line-height: 1.45; color: var(--text2);
+}

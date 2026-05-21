@@ -46,6 +46,15 @@ app.get('/api/proxy/cards', async (req, res) => {
   }
 });
 
+app.get('/api/proxy/cards/:cardId', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/${encodeURIComponent(req.params.cardId)}`);
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+  }
+});
+
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server });
 
@@ -68,6 +77,7 @@ function roomSnapshot(roomId) {
     nameA:         s.nameA,
     nameB:         s.nameB,
     highlightCard: s.highlightCard,
+    highlightMode: s.highlightMode,
     timer: {
       running:   s.timer.running,
       elapsedMs: getElapsedMs(s.timer)
@@ -137,9 +147,27 @@ wss.on('connection', (ws, req) => {
           id:          String(cardId).slice(0, 100),
           name:        typeof msg.cardName === 'string'        ? msg.cardName.slice(0, 100)        : '',
           image:       typeof msg.cardImage === 'string'       ? msg.cardImage.slice(0, 500)       : '',
-          riftboundId: typeof msg.cardRiftboundId === 'string' ? msg.cardRiftboundId.slice(0, 50)  : ''
+          riftboundId: typeof msg.cardRiftboundId === 'string' ? msg.cardRiftboundId.slice(0, 50)  : '',
+          description: typeof msg.description === 'string'     ? msg.description.slice(0, 2000)    : '',
+          flavorText:  typeof msg.flavorText === 'string'      ? msg.flavorText.slice(0, 500)      : '',
+          keywords:    Array.isArray(msg.keywords)             ? msg.keywords.slice(0, 20).map(k => String(k).slice(0, 50)) : [],
+          stats:       msg.stats && typeof msg.stats === 'object' ? {
+            energy: typeof msg.stats.energy === 'number' ? msg.stats.energy : null,
+            might:  typeof msg.stats.might  === 'number' ? msg.stats.might  : null,
+            power:  typeof msg.stats.power  === 'number' ? msg.stats.power  : null,
+          } : null,
+          faction:     typeof msg.faction === 'string'         ? msg.faction.slice(0, 50)          : '',
+          rarity:      typeof msg.rarity  === 'string'         ? msg.rarity.slice(0, 50)           : '',
         };
         broadcast(roomId);
+        break;
+      }
+      case 'highlight:mode': {
+        const allowed = ['tooltip', 'card', 'detail'];
+        if (allowed.includes(msg.mode)) {
+          state.highlightMode = msg.mode;
+          broadcast(roomId);
+        }
         break;
       }
       default: break;

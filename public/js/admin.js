@@ -39,11 +39,12 @@ const hlActiveId     = document.getElementById('hlActiveId');
 const cardsGrid      = document.getElementById('cardsGrid');
 const nameAEl        = document.getElementById('nameA');
 const nameBEl        = document.getElementById('nameB');
-const searchInput    = document.getElementById('searchInput');
-const searchBtn      = document.getElementById('searchBtn');
-const searchStatusEl = document.getElementById('searchStatus');
-const filterSetEl    = document.getElementById('filterSet');
-const filterFactionEl = document.getElementById('filterFaction');
+const searchInput     = document.getElementById('searchInput');
+const searchBtn       = document.getElementById('searchBtn');
+const searchStatusEl  = document.getElementById('searchStatus');
+const filterSetEl     = document.getElementById('filterSet');
+const filterFaction1El = document.getElementById('filterFaction1');
+const filterFaction2El = document.getElementById('filterFaction2');
 
 // ── RiftScribe filters ──
 async function loadFilters() {
@@ -54,30 +55,50 @@ async function loadFilters() {
       opt.value = s; opt.textContent = s;
       filterSetEl.appendChild(opt);
     }
-    for (const f of (data.factions || [])) {
-      const opt = document.createElement('option');
-      opt.value = f; opt.textContent = f;
-      filterFactionEl.appendChild(opt);
+    const factionOpts = (data.factions || []).map(f => {
+      const o = document.createElement('option'); o.value = f; o.textContent = f; return o;
+    });
+    for (const o of factionOpts) {
+      filterFaction1El.appendChild(o.cloneNode(true));
+      filterFaction2El.appendChild(o.cloneNode(true));
     }
   } catch { /* silently fail */ }
 }
 
 // ── RiftScribe search ──
 async function searchCards(query) {
-  const q = query.trim();
-  const setId   = filterSetEl.value;
-  const faction = filterFactionEl.value;
-  if (!q && !setId && !faction) return;
+  const q   = query.trim();
+  const setId = filterSetEl.value;
+  const f1  = filterFaction1El.value;
+  const f2  = filterFaction2El.value;
+  if (!q && !setId && !f1 && !f2) return;
   searchStatusEl.textContent = 'Ricerca in corso…';
   searchBtn.disabled = true;
   cardsGrid.innerHTML = '';
   try {
-    const params = { limit: 20 };
-    if (q)       params.q       = q;
-    if (setId)   params.set_id  = setId;
-    if (faction) params.faction = faction;
-    const { data } = await axios.get('/api/proxy/cards', { params });
-    const items = (data || []).map(c => ({
+    const buildParams = (faction) => {
+      const p = { limit: 20 };
+      if (q)       p.q       = q;
+      if (setId)   p.set_id  = setId;
+      if (faction) p.faction = faction;
+      return p;
+    };
+    let raw;
+    if (f1 && f2) {
+      const [r1, r2] = await Promise.all([
+        axios.get('/api/proxy/cards', { params: buildParams(f1) }),
+        axios.get('/api/proxy/cards', { params: buildParams(f2) }),
+      ]);
+      const seen = new Set();
+      raw = [...(r1.data || []), ...(r2.data || [])].filter(c => {
+        if (seen.has(c.id)) return false;
+        seen.add(c.id); return true;
+      });
+    } else {
+      const { data } = await axios.get('/api/proxy/cards', { params: buildParams(f1 || f2) });
+      raw = data || [];
+    }
+    const items = raw.map(c => ({
       id:          c.id,
       name:        c.name,
       image:       c.image_thumb?.medium ?? c.image_thumb?.small ?? '',
@@ -111,12 +132,25 @@ function renderCards(list) {
         <div class="card-name">${c.name}</div>
         <div class="card-id">${c.riftboundId || c.type}</div>
       </div>`;
-    div.addEventListener('click', () => {
+    div.addEventListener('click', async () => {
+      let detail = {};
+      try {
+        const { data: d } = await axios.get(`/api/proxy/cards/${c.id}`);
+        detail = {
+          description: d.description ?? '',
+          flavorText:  d.flavor_text  ?? '',
+          keywords:    d.keywords     ?? [],
+          stats:       d.stats        ?? null,
+          faction:     d.faction      ?? '',
+          rarity:      d.rarity       ?? '',
+        };
+      } catch { /* invia senza dettagli */ }
       ws.send('highlight:set', {
         cardId:          c.id,
         cardName:        c.name,
         cardImage:       c.image,
-        cardRiftboundId: c.riftboundId
+        cardRiftboundId: c.riftboundId,
+        ...detail
       });
     });
     cardsGrid.appendChild(div);
@@ -158,6 +192,11 @@ function renderState(state) {
 
   if (state.nameA && !nameAEl.matches(':focus')) nameAEl.value = state.nameA;
   if (state.nameB && !nameBEl.matches(':focus')) nameBEl.value = state.nameB;
+
+  const mode = state.highlightMode ?? 'card';
+  document.querySelectorAll('.btn-mode').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
 }
 
 function tick() {
@@ -204,6 +243,11 @@ nameAEl.addEventListener('blur', sendNames);
 nameAEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameAEl.blur(); } });
 nameBEl.addEventListener('blur', sendNames);
 nameBEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameBEl.blur(); } });
+
+// ── Mode buttons ──
+document.querySelectorAll('.btn-mode').forEach(btn => {
+  btn.addEventListener('click', () => ws.send('highlight:mode', { mode: btn.dataset.mode }));
+});
 
 // ── Search ──
 loadFilters();
