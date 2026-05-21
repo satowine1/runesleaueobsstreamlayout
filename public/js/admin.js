@@ -22,7 +22,7 @@ for (const l of links) {
 }
 
 // ── State ──
-let lastState = null, localElapsedMs = 0;
+let lastState = null, localDisplayMs = 0;
 
 // ── Elements ──
 const scoreAEl       = document.getElementById('scoreA');
@@ -169,8 +169,8 @@ function renderState(state) {
   scoreAEl.textContent = state.scoreA;
   scoreBEl.textContent = state.scoreB;
 
-  localElapsedMs = state.timer.elapsedMs;
-  timerValEl.textContent = formatMs(localElapsedMs);
+  localDisplayMs = state.timer.displayMs;
+  timerValEl.textContent = formatMs(localDisplayMs);
 
   const live = state.timer.running;
   timerStateEl.textContent = live ? 'Live' : 'Pause';
@@ -197,12 +197,17 @@ function renderState(state) {
   document.querySelectorAll('.btn-mode').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
+
+  const dir = state.timer.direction ?? 'up';
+  document.querySelectorAll('.btn-dir').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.dir === dir);
+  });
 }
 
 function tick() {
   if (!lastState?.timer?.running) return;
-  localElapsedMs += 250;
-  timerValEl.textContent = formatMs(localElapsedMs);
+  localDisplayMs += lastState.timer.direction === 'down' ? -250 : 250;
+  timerValEl.textContent = formatMs(localDisplayMs);
 }
 
 // ── WS ──
@@ -247,6 +252,11 @@ nameBEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames();
 // ── Mode buttons ──
 document.querySelectorAll('.btn-mode').forEach(btn => {
   btn.addEventListener('click', () => ws.send('highlight:mode', { mode: btn.dataset.mode }));
+});
+
+// ── Direction buttons ──
+document.querySelectorAll('.btn-dir').forEach(btn => {
+  btn.addEventListener('click', () => ws.send('timer:direction', { direction: btn.dataset.dir }));
 });
 
 // ── Search ──

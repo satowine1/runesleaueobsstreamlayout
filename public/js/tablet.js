@@ -34,7 +34,7 @@ function renderState(state) {
   scoreMiniA.textContent = state.scoreA;
   scoreMiniB.textContent = state.scoreB;
 
-  localElapsedMs = state.timer.elapsedMs;
+  localElapsedMs = state.timer.displayMs;
   timerDispEl.textContent = formatMs(localElapsedMs);
 
   const live = state.timer.running;
@@ -48,7 +48,7 @@ function renderState(state) {
 
 function tick() {
   if (!lastState?.timer?.running) return;
-  localElapsedMs += 250;
+  localElapsedMs += lastState.timer.direction === 'down' ? -250 : 250;
   timerDispEl.textContent = formatMs(localElapsedMs);
 }
 

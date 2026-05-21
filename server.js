@@ -9,6 +9,7 @@ import axios from 'axios';
 import {
   createRoomState,
   getElapsedMs,
+  getDisplayMs,
   startTimer,
   pauseTimer,
   resetTimer,
@@ -80,7 +81,8 @@ function roomSnapshot(roomId) {
     highlightMode: s.highlightMode,
     timer: {
       running:   s.timer.running,
-      elapsedMs: getElapsedMs(s.timer)
+      direction: s.timer.direction,
+      displayMs: getDisplayMs(s.timer)
     }
   };
 }
@@ -160,6 +162,13 @@ wss.on('connection', (ws, req) => {
           rarity:      typeof msg.rarity  === 'string'         ? msg.rarity.slice(0, 50)           : '',
         };
         broadcast(roomId);
+        break;
+      }
+      case 'timer:direction': {
+        if (msg.direction === 'up' || msg.direction === 'down') {
+          state.timer.direction = msg.direction;
+          broadcast(roomId);
+        }
         break;
       }
       case 'highlight:mode': {

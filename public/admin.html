@@ -153,6 +153,9 @@
     .mode-row { display: flex; gap: 6px; }
     .btn-mode { flex: 1; padding: 8px 12px; font-size: 13px; }
     .btn-mode.active { background: var(--accent); border-color: var(--accent); color: #000; }
+    .timer-dir-row { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+    .btn-dir { flex: 1; padding: 8px 12px; font-size: 13px; }
+    .btn-dir.active { background: var(--accent); border-color: var(--accent); color: #000; }
   </style>
 </head>
 <body>
@@ -221,8 +224,13 @@
       </div>
       <div class="timer-preset-row">
         <span class="label">Imposta:</span>
-        <input class="timer-set-input" id="timerSetInput" type="text" value="00:00" placeholder="MM:SS"/>
+        <input class="timer-set-input" id="timerSetInput" type="text" value="60:00" placeholder="MM:SS"/>
         <button id="tSetBtn">Applica</button>
+      </div>
+      <div class="timer-dir-row">
+        <span class="label" style="white-space:nowrap;">Direzione:</span>
+        <button class="btn-dir" data-dir="up">▲ Su</button>
+        <button class="btn-dir" data-dir="down">▼ Giù</button>
       </div>
     </div>
 
