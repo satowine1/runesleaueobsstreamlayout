@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>OBS Battlefield</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    body { background: transparent; margin: 0; padding: 0; }
+    #bfRoot { display: inline-block; }
+
+    .bf-wrap {
+      width: 400px;
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.70);
+      animation: bfIn .45s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .bf-img-clip {
+      width: 400px;
+      height: 50px;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+    }
+    .bf-img-clip img {
+      width: 100%;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      display: block;
+    }
+    .bf-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 15px;
+      background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.75) 100%);
+    }
+    .bf-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: 2px;
+      text-align: center;
+      text-shadow: 0 1px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8);
+    }
+
+    @keyframes bfIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)   scale(1);    }
+    }
+  </style>
+</head>
+<body>
+<div id="bfRoot"></div>
+<script type="module" src="/js/obs-battlefield.js"></script>
+</body>
+</html>

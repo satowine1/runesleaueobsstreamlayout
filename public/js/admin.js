@@ -10,13 +10,16 @@ const links = [
   { label: 'Score A',       path: 'obs-scoreA.html' },
   { label: 'Score B',       path: 'obs-scoreB.html' },
   { label: 'Highlight src', path: 'obs-highlight.html' },
+  { label: 'Battlefield A', path: 'obs-battlefield.html?player=A' },
+  { label: 'Battlefield B', path: 'obs-battlefield.html?player=B' },
   { label: 'Tablet',        path: 'tablet.html' },
 ];
 const linksRow = document.getElementById('linksRow');
 for (const l of links) {
   const a = document.createElement('a');
   a.className = 'link-badge'; a.target = '_blank';
-  a.href = `/${l.path}?room=${encodeURIComponent(roomId)}`;
+  const sep = l.path.includes('?') ? '&' : '?';
+  a.href = `/${l.path}${sep}room=${encodeURIComponent(roomId)}`;
   a.textContent = l.label;
   linksRow.appendChild(a);
 }
@@ -202,6 +205,9 @@ function renderState(state) {
   document.querySelectorAll('.btn-dir').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.dir === dir);
   });
+
+  updateBfSlot('A', state.battlefieldA ?? null);
+  updateBfSlot('B', state.battlefieldB ?? null);
 }
 
 function tick() {
@@ -248,6 +254,73 @@ nameAEl.addEventListener('blur', sendNames);
 nameAEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameAEl.blur(); } });
 nameBEl.addEventListener('blur', sendNames);
 nameBEl.addEventListener('keydown', e => { if (e.key === 'Enter') { sendNames(); nameBEl.blur(); } });
+
+// ── Battlefield ──
+const bfSearchInput = document.getElementById('bfSearchInput');
+const bfSearchBtn   = document.getElementById('bfSearchBtn');
+const bfStatusEl    = document.getElementById('bfSearchStatus');
+const bfResultsEl   = document.getElementById('bfResults');
+
+async function searchBattlefields(query) {
+  const q = query.trim();
+  if (q.length < 2) { bfStatusEl.textContent = 'Inserisci almeno 2 caratteri.'; return; }
+  bfStatusEl.textContent = 'Ricerca in corso…';
+  bfSearchBtn.disabled = true;
+  bfResultsEl.innerHTML = '';
+  try {
+    const { data } = await axios.get('/api/proxy/cards/search', {
+      params: { q, types: 'Battlefield', limit: 20 }
+    });
+    const items = data || [];
+    bfStatusEl.textContent = items.length ? `${items.length} risultati` : 'Nessun battlefield trovato.';
+    renderBfResults(items);
+  } catch {
+    bfStatusEl.textContent = 'Errore durante la ricerca.';
+  } finally {
+    bfSearchBtn.disabled = false;
+  }
+}
+
+function renderBfResults(items) {
+  bfResultsEl.innerHTML = '';
+  for (const c of items) {
+    const div = document.createElement('div');
+    div.className = 'bf-result-item';
+    div.innerHTML = `
+      <img src="${c.thumbnail_url || ''}" alt="">
+      <div class="bf-result-name">${c.name}</div>
+      <div class="bf-assign-btns">
+        <button class="btn-accent" data-who="A">A</button>
+        <button class="btn-accent" data-who="B">B</button>
+      </div>`;
+    div.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const who = btn.dataset.who;
+        let image = c.thumbnail_url || '';
+        try {
+          const { data: d } = await axios.get(`/api/proxy/cards/${c.card_id}`);
+          image = d.image_thumb?.large ?? d.image_thumb?.medium ?? image;
+        } catch { }
+        ws.send('battlefield:set', { who, cardId: c.card_id, cardName: c.name, cardImage: image });
+      });
+    });
+    bfResultsEl.appendChild(div);
+  }
+}
+
+function updateBfSlot(who, card) {
+  const el = document.getElementById(`bfCard${who}`);
+  if (card) {
+    el.innerHTML = `<img src="${card.image}" alt=""><div class="bf-slot-name">${card.name}</div>`;
+  } else {
+    el.innerHTML = `<span class="bf-empty">(nessuno)</span>`;
+  }
+}
+
+bfSearchBtn.addEventListener('click', () => searchBattlefields(bfSearchInput.value));
+bfSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchBattlefields(bfSearchInput.value); });
+document.getElementById('clearBfA').addEventListener('click', () => ws.send('battlefield:set', { who: 'A', cardId: null }));
+document.getElementById('clearBfB').addEventListener('click', () => ws.send('battlefield:set', { who: 'B', cardId: null }));
 
 // ── Mode buttons ──
 document.querySelectorAll('.btn-mode').forEach(btn => {

@@ -47,6 +47,15 @@ app.get('/api/proxy/cards', async (req, res) => {
   }
 });
 
+app.get('/api/proxy/cards/search', async (req, res) => {
+  try {
+    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/search`, { params: req.query });
+    res.json(data);
+  } catch (err) {
+    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+  }
+});
+
 app.get('/api/proxy/cards/:cardId', async (req, res) => {
   try {
     const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/${encodeURIComponent(req.params.cardId)}`);
@@ -79,6 +88,8 @@ function roomSnapshot(roomId) {
     nameB:         s.nameB,
     highlightCard: s.highlightCard,
     highlightMode: s.highlightMode,
+    battlefieldA:  s.battlefieldA,
+    battlefieldB:  s.battlefieldB,
     timer: {
       running:   s.timer.running,
       direction: s.timer.direction,
@@ -164,6 +175,21 @@ wss.on('connection', (ws, req) => {
         broadcast(roomId);
         break;
       }
+      case 'battlefield:set': {
+        const who = msg.who === 'B' ? 'B' : 'A';
+        const key = `battlefield${who}`;
+        if (!msg.cardId) {
+          state[key] = null;
+        } else {
+          state[key] = {
+            id:    String(msg.cardId).slice(0, 100),
+            name:  typeof msg.cardName  === 'string' ? msg.cardName.slice(0, 100)  : '',
+            image: typeof msg.cardImage === 'string' ? msg.cardImage.slice(0, 500) : '',
+          };
+        }
+        broadcast(roomId);
+        break;
+      }
       case 'timer:direction': {
         if (msg.direction === 'up' || msg.direction === 'down') {
           state.timer.direction = msg.direction;
@@ -196,5 +222,7 @@ server.listen(PORT, () => {
   console.log(`  Timer src:  http://localhost:${PORT}/obs-timer.html?room=ABCD`);
   console.log(`  Score A:    http://localhost:${PORT}/obs-scoreA.html?room=ABCD`);
   console.log(`  Score B:    http://localhost:${PORT}/obs-scoreB.html?room=ABCD`);
-  console.log(`  Highlight:  http://localhost:${PORT}/obs-highlight.html?room=ABCD\n`);
+  console.log(`  Highlight:  http://localhost:${PORT}/obs-highlight.html?room=ABCD`);
+  console.log(`  Bfield A:   http://localhost:${PORT}/obs-battlefield.html?player=A&room=ABCD`);
+  console.log(`  Bfield B:   http://localhost:${PORT}/obs-battlefield.html?player=B&room=ABCD\n`);
 });
