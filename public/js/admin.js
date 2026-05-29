@@ -29,6 +29,11 @@ for (const l of links) {
 // ── State ──
 let lastState = null, localDisplayMs = 0;
 
+// ── Favourites (in-memory, reset on F5) ──
+const favHighlight   = new Map();
+const favBattlefield = new Map();
+const favLegend      = new Map();
+
 // ── Elements ──
 const scoreAEl       = document.getElementById('scoreA');
 const scoreBEl       = document.getElementById('scoreB');
@@ -136,27 +141,17 @@ function renderCards(list) {
       <div>
         <div class="card-name">${c.name}</div>
         <div class="card-id">${c.riftboundId || c.type}</div>
-      </div>`;
-    div.addEventListener('click', async () => {
-      let detail = {};
-      try {
-        const { data: d } = await axios.get(`/api/proxy/cards/${c.id}`);
-        detail = {
-          description: d.description ?? '',
-          flavorText:  d.flavor_text  ?? '',
-          keywords:    d.keywords     ?? [],
-          stats:       d.stats        ?? null,
-          faction:     d.faction      ?? '',
-          rarity:      d.rarity       ?? '',
-        };
-      } catch { /* invia senza dettagli */ }
-      ws.send('highlight:set', {
-        cardId:          c.id,
-        cardName:        c.name,
-        cardImage:       c.image,
-        cardRiftboundId: c.riftboundId,
-        ...detail
-      });
+      </div>
+      <button class="fav-toggle${favHighlight.has(c.id) ? ' active' : ''}" data-fav-section="hl" data-id="${c.id}" title="Preferiti">★</button>`;
+    div.querySelector('.fav-toggle').addEventListener('click', e => {
+      e.stopPropagation();
+      if (favHighlight.has(c.id)) favHighlight.delete(c.id); else favHighlight.set(c.id, c);
+      e.currentTarget.classList.toggle('active', favHighlight.has(c.id));
+      renderFavHL();
+    });
+    div.addEventListener('click', e => {
+      if (e.target.closest('.fav-toggle')) return;
+      assignHighlight(c);
     });
     cardsGrid.appendChild(div);
   }
@@ -297,17 +292,15 @@ function renderBfResults(items) {
       <div class="bf-assign-btns">
         <button class="btn-accent" data-who="A">A</button>
         <button class="btn-accent" data-who="B">B</button>
-      </div>`;
-    div.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const who = btn.dataset.who;
-        let image = c.thumbnail_url || '';
-        try {
-          const { data: d } = await axios.get(`/api/proxy/cards/${c.card_id}`);
-          image = d.image_thumb?.large ?? d.image_thumb?.medium ?? image;
-        } catch { }
-        ws.send('battlefield:set', { who, cardId: c.card_id, cardName: c.name, cardImage: image });
-      });
+      </div>
+      <button class="fav-toggle${favBattlefield.has(c.card_id) ? ' active' : ''}" data-fav-section="bf" data-id="${c.card_id}" title="Preferiti">★</button>`;
+    div.querySelectorAll('[data-who]').forEach(btn => {
+      btn.addEventListener('click', () => assignBf(c, btn.dataset.who));
+    });
+    div.querySelector('.fav-toggle').addEventListener('click', e => {
+      if (favBattlefield.has(c.card_id)) favBattlefield.delete(c.card_id); else favBattlefield.set(c.card_id, c);
+      e.currentTarget.classList.toggle('active', favBattlefield.has(c.card_id));
+      renderFavBF();
     });
     bfResultsEl.appendChild(div);
   }
@@ -364,17 +357,15 @@ function renderLegResults(items) {
       <div class="leg-assign-btns">
         <button class="btn-accent" data-who="A">A</button>
         <button class="btn-accent" data-who="B">B</button>
-      </div>`;
-    div.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const who = btn.dataset.who;
-        let image = c.thumbnail_url || '';
-        try {
-          const { data: d } = await axios.get(`/api/proxy/cards/${c.card_id}`);
-          image = d.image_thumb?.large ?? d.image_thumb?.medium ?? image;
-        } catch { }
-        ws.send('legend:set', { who, cardId: c.card_id, cardName: c.name, cardImage: image });
-      });
+      </div>
+      <button class="fav-toggle${favLegend.has(c.card_id) ? ' active' : ''}" data-fav-section="leg" data-id="${c.card_id}" title="Preferiti">★</button>`;
+    div.querySelectorAll('[data-who]').forEach(btn => {
+      btn.addEventListener('click', () => assignLeg(c, btn.dataset.who));
+    });
+    div.querySelector('.fav-toggle').addEventListener('click', e => {
+      if (favLegend.has(c.card_id)) favLegend.delete(c.card_id); else favLegend.set(c.card_id, c);
+      e.currentTarget.classList.toggle('active', favLegend.has(c.card_id));
+      renderFavLEG();
     });
     legResultsEl.appendChild(div);
   }
@@ -393,6 +384,118 @@ legSearchBtn.addEventListener('click', () => searchLegends(legSearchInput.value)
 legSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchLegends(legSearchInput.value); });
 document.getElementById('clearLegA').addEventListener('click', () => ws.send('legend:set', { who: 'A', cardId: null }));
 document.getElementById('clearLegB').addEventListener('click', () => ws.send('legend:set', { who: 'B', cardId: null }));
+
+// ── Assign helpers ──
+async function assignHighlight(c) {
+  let detail = {};
+  try {
+    const { data: d } = await axios.get(`/api/proxy/cards/${c.id}`);
+    detail = {
+      description: d.description ?? '',
+      flavorText:  d.flavor_text  ?? '',
+      keywords:    d.keywords     ?? [],
+      stats:       d.stats        ?? null,
+      faction:     d.faction      ?? '',
+      rarity:      d.rarity       ?? '',
+    };
+  } catch { }
+  ws.send('highlight:set', {
+    cardId: c.id, cardName: c.name, cardImage: c.image, cardRiftboundId: c.riftboundId, ...detail
+  });
+}
+
+async function assignBf(c, who) {
+  let image = c.thumbnail_url || '';
+  try {
+    const { data: d } = await axios.get(`/api/proxy/cards/${c.card_id}`);
+    image = d.image_thumb?.large ?? d.image_thumb?.medium ?? image;
+  } catch { }
+  ws.send('battlefield:set', { who, cardId: c.card_id, cardName: c.name, cardImage: image });
+}
+
+async function assignLeg(c, who) {
+  let image = c.thumbnail_url || '';
+  try {
+    const { data: d } = await axios.get(`/api/proxy/cards/${c.card_id}`);
+    image = d.image_thumb?.large ?? d.image_thumb?.medium ?? image;
+  } catch { }
+  ws.send('legend:set', { who, cardId: c.card_id, cardName: c.name, cardImage: image });
+}
+
+// ── Favourites rendering ──
+function renderFavSection(sectionId, map, buildItem) {
+  const el = document.getElementById(sectionId);
+  if (!el) return;
+  if (map.size === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="fav-header">★ Preferiti</div>';
+  const list = document.createElement('div');
+  list.className = 'fav-list';
+  for (const card of map.values()) buildItem(list, card);
+  el.appendChild(list);
+  const sep = document.createElement('hr');
+  sep.className = 'fav-sep';
+  el.appendChild(sep);
+}
+
+function renderFavHL() {
+  renderFavSection('favHL', favHighlight, (list, c) => {
+    const div = document.createElement('div');
+    div.className = 'fav-item';
+    div.innerHTML = `
+      <img src="${c.image}" alt="">
+      <span class="fav-item-name">${c.name}</span>
+      <button class="fav-remove" title="Rimuovi">✕</button>`;
+    div.querySelector('.fav-remove').addEventListener('click', e => {
+      e.stopPropagation();
+      favHighlight.delete(c.id); renderFavHL();
+      document.querySelectorAll(`.fav-toggle[data-fav-section="hl"][data-id="${c.id}"]`).forEach(b => b.classList.remove('active'));
+    });
+    div.addEventListener('click', e => { if (!e.target.closest('.fav-remove')) assignHighlight(c); });
+    list.appendChild(div);
+  });
+}
+
+function renderFavBF() {
+  renderFavSection('favBF', favBattlefield, (list, c) => {
+    const div = document.createElement('div');
+    div.className = 'fav-item';
+    div.innerHTML = `
+      <img src="${c.thumbnail_url || ''}" alt="">
+      <span class="fav-item-name">${c.name}</span>
+      <div class="fav-use-btns">
+        <button class="btn-accent" data-who="A">A</button>
+        <button class="btn-accent" data-who="B">B</button>
+      </div>
+      <button class="fav-remove" title="Rimuovi">✕</button>`;
+    div.querySelector('.fav-remove').addEventListener('click', () => {
+      favBattlefield.delete(c.card_id); renderFavBF();
+      document.querySelectorAll(`.fav-toggle[data-fav-section="bf"][data-id="${c.card_id}"]`).forEach(b => b.classList.remove('active'));
+    });
+    div.querySelectorAll('[data-who]').forEach(btn => btn.addEventListener('click', () => assignBf(c, btn.dataset.who)));
+    list.appendChild(div);
+  });
+}
+
+function renderFavLEG() {
+  renderFavSection('favLEG', favLegend, (list, c) => {
+    const div = document.createElement('div');
+    div.className = 'fav-item';
+    div.innerHTML = `
+      <img src="${c.thumbnail_url || ''}" alt="">
+      <span class="fav-item-name">${c.name}</span>
+      <div class="fav-use-btns">
+        <button class="btn-accent" data-who="A">A</button>
+        <button class="btn-accent" data-who="B">B</button>
+      </div>
+      <button class="fav-remove" title="Rimuovi">✕</button>`;
+    div.querySelector('.fav-remove').addEventListener('click', () => {
+      favLegend.delete(c.card_id); renderFavLEG();
+      document.querySelectorAll(`.fav-toggle[data-fav-section="leg"][data-id="${c.card_id}"]`).forEach(b => b.classList.remove('active'));
+    });
+    div.querySelectorAll('[data-who]').forEach(btn => btn.addEventListener('click', () => assignLeg(c, btn.dataset.who)));
+    list.appendChild(div);
+  });
+}
 
 // ── Mode buttons ──
 document.querySelectorAll('.btn-mode').forEach(btn => {

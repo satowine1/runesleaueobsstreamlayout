@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap');
 
 :root {
   --bg:        #0a0a0f;
@@ -14,7 +14,7 @@
   --red:       #e84a4a;
   --green:     #4ae88a;
 
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 16px;
 }
 
@@ -44,7 +44,7 @@ body {
 
 /* ── LABEL / BADGE ── */
 .label {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 2px;
@@ -66,26 +66,26 @@ body {
 
 /* ── TYPOGRAPHY ── */
 .num-xl {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 80px; font-weight: 900; line-height: 1; letter-spacing: -1px;
 }
 .num-lg {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 56px; font-weight: 900; line-height: 1;
 }
 .num-md {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 40px; font-weight: 900; line-height: 1;
 }
 .name-text {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 24px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
 }
 hr.sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
 /* ── BUTTONS ── */
 button {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 15px; font-weight: 700;
   letter-spacing: 1px; text-transform: uppercase;
   background: var(--bg2);
@@ -114,7 +114,7 @@ button.btn-score {
 
 /* ── INPUT ── */
 input {
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   padding: 10px 14px;
   border-radius: 10px;
   border: 1px solid var(--border2);
@@ -164,7 +164,7 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
   border-radius: 6px; border: 1px solid var(--border); flex-shrink: 0;
 }
 .card-item .card-name {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 15px; font-weight: 700;
 }
 .card-item .card-id { font-size: 11px; color: var(--text2); margin-top: 2px; }
@@ -186,7 +186,7 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
 .obs-wrap { background: transparent; }
 
 .obs-score {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 88px; font-weight: 900; line-height: 1;
   color: #fff;
   text-shadow: 0 2px 20px rgba(0,0,0,0.8);
@@ -199,7 +199,7 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
 }
 
 .obs-timer {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 64px; font-weight: 900; line-height: 1;
   color: #fff;
   text-shadow: 0 2px 20px rgba(0,0,0,0.8);
@@ -236,7 +236,7 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
   min-width: 210px;
 }
 .obs-hl-tag {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 11px; font-weight: 700;
   letter-spacing: 3px; text-transform: uppercase;
   color: var(--accent);
@@ -249,7 +249,7 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
   background: var(--accent); border-radius: 1px;
 }
 .obs-hl-name {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 36px; font-weight: 900;
   letter-spacing: 1px; text-transform: uppercase;
   color: #fff; line-height: 1;
@@ -272,7 +272,7 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
 }
 .obs-hl-meta { display: flex; gap: 6px; flex-wrap: wrap; }
 .obs-hl-badge {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
   padding: 3px 9px; border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.2); color: var(--text2);
@@ -280,17 +280,17 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
 .obs-hl-stats { display: flex; gap: 14px; }
 .obs-hl-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .obs-hl-stat-val {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 26px; font-weight: 900; color: #fff; line-height: 1;
 }
 .obs-hl-stat-lbl {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--text2);
 }
 .obs-hl-keywords { display: flex; gap: 4px; flex-wrap: wrap; }
 .obs-hl-keyword {
-  font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
   padding: 2px 7px; border-radius: 4px;
   background: rgba(232,200,74,0.15); color: var(--accent);
