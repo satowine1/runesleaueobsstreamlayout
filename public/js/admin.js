@@ -12,6 +12,8 @@ const links = [
   { label: 'Highlight src', path: 'obs-highlight.html' },
   { label: 'Battlefield A', path: 'obs-battlefield.html?player=A' },
   { label: 'Battlefield B', path: 'obs-battlefield.html?player=B' },
+  { label: 'Legend A',      path: 'obs-legend.html?player=A' },
+  { label: 'Legend B',      path: 'obs-legend.html?player=B' },
   { label: 'Tablet',        path: 'tablet.html' },
 ];
 const linksRow = document.getElementById('linksRow');
@@ -208,6 +210,9 @@ function renderState(state) {
 
   updateBfSlot('A', state.battlefieldA ?? null);
   updateBfSlot('B', state.battlefieldB ?? null);
+
+  updateLegSlot('A', state.legendA ?? null);
+  updateLegSlot('B', state.legendB ?? null);
 }
 
 function tick() {
@@ -321,6 +326,73 @@ bfSearchBtn.addEventListener('click', () => searchBattlefields(bfSearchInput.val
 bfSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchBattlefields(bfSearchInput.value); });
 document.getElementById('clearBfA').addEventListener('click', () => ws.send('battlefield:set', { who: 'A', cardId: null }));
 document.getElementById('clearBfB').addEventListener('click', () => ws.send('battlefield:set', { who: 'B', cardId: null }));
+
+// ── Legend ──
+const legSearchInput = document.getElementById('legSearchInput');
+const legSearchBtn   = document.getElementById('legSearchBtn');
+const legStatusEl    = document.getElementById('legSearchStatus');
+const legResultsEl   = document.getElementById('legResults');
+
+async function searchLegends(query) {
+  const q = query.trim();
+  if (q.length < 2) { legStatusEl.textContent = 'Inserisci almeno 2 caratteri.'; return; }
+  legStatusEl.textContent = 'Ricerca in corso…';
+  legSearchBtn.disabled = true;
+  legResultsEl.innerHTML = '';
+  try {
+    const { data } = await axios.get('/api/proxy/cards/search', {
+      params: { q, types: 'Legend', limit: 20 }
+    });
+    const items = data || [];
+    legStatusEl.textContent = items.length ? `${items.length} risultati` : 'Nessuna legend trovata.';
+    renderLegResults(items);
+  } catch {
+    legStatusEl.textContent = 'Errore durante la ricerca.';
+  } finally {
+    legSearchBtn.disabled = false;
+  }
+}
+
+function renderLegResults(items) {
+  legResultsEl.innerHTML = '';
+  for (const c of items) {
+    const div = document.createElement('div');
+    div.className = 'leg-result-item';
+    div.innerHTML = `
+      <img src="${c.thumbnail_url || ''}" alt="">
+      <div class="leg-result-name">${c.name}</div>
+      <div class="leg-assign-btns">
+        <button class="btn-accent" data-who="A">A</button>
+        <button class="btn-accent" data-who="B">B</button>
+      </div>`;
+    div.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const who = btn.dataset.who;
+        let image = c.thumbnail_url || '';
+        try {
+          const { data: d } = await axios.get(`/api/proxy/cards/${c.card_id}`);
+          image = d.image_thumb?.large ?? d.image_thumb?.medium ?? image;
+        } catch { }
+        ws.send('legend:set', { who, cardId: c.card_id, cardName: c.name, cardImage: image });
+      });
+    });
+    legResultsEl.appendChild(div);
+  }
+}
+
+function updateLegSlot(who, card) {
+  const el = document.getElementById(`legCard${who}`);
+  if (card) {
+    el.innerHTML = `<img src="${card.image}" alt=""><div class="leg-slot-name">${card.name}</div>`;
+  } else {
+    el.innerHTML = `<span class="leg-empty">(nessuno)</span>`;
+  }
+}
+
+legSearchBtn.addEventListener('click', () => searchLegends(legSearchInput.value));
+legSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchLegends(legSearchInput.value); });
+document.getElementById('clearLegA').addEventListener('click', () => ws.send('legend:set', { who: 'A', cardId: null }));
+document.getElementById('clearLegB').addEventListener('click', () => ws.send('legend:set', { who: 'B', cardId: null }));
 
 // ── Mode buttons ──
 document.querySelectorAll('.btn-mode').forEach(btn => {

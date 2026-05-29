@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>OBS Legend</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    body { background: transparent; margin: 0; padding: 0; }
+    #legRoot { display: inline-block; }
+
+    .leg-wrap {
+      width: 140px;
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.70);
+      animation: legIn .45s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .leg-img-clip {
+      width: 140px;
+      height: 140px;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+    }
+    .leg-img-clip img {
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+    }
+    .leg-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 28px 8px 8px;
+      background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.85));
+      text-align: center;
+    }
+    .leg-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: 2px;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8);
+    }
+
+    @keyframes legIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1);    }
+    }
+  </style>
+</head>
+<body>
+<div id="legRoot"></div>
+<script type="module" src="/js/obs-legend.js"></script>
+</body>
+</html>

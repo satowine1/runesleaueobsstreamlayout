@@ -9,6 +9,8 @@ export function createRoomState() {
     highlightMode: 'card',
     battlefieldA: null,
     battlefieldB: null,
+    legendA: null,
+    legendB: null,
     timer: {
       running: false,
       startEpochMs: null,

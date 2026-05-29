@@ -90,6 +90,8 @@ function roomSnapshot(roomId) {
     highlightMode: s.highlightMode,
     battlefieldA:  s.battlefieldA,
     battlefieldB:  s.battlefieldB,
+    legendA:       s.legendA,
+    legendB:       s.legendB,
     timer: {
       running:   s.timer.running,
       direction: s.timer.direction,
@@ -178,6 +180,21 @@ wss.on('connection', (ws, req) => {
       case 'battlefield:set': {
         const who = msg.who === 'B' ? 'B' : 'A';
         const key = `battlefield${who}`;
+        if (!msg.cardId) {
+          state[key] = null;
+        } else {
+          state[key] = {
+            id:    String(msg.cardId).slice(0, 100),
+            name:  typeof msg.cardName  === 'string' ? msg.cardName.slice(0, 100)  : '',
+            image: typeof msg.cardImage === 'string' ? msg.cardImage.slice(0, 500) : '',
+          };
+        }
+        broadcast(roomId);
+        break;
+      }
+      case 'legend:set': {
+        const who = msg.who === 'B' ? 'B' : 'A';
+        const key = `legend${who}`;
         if (!msg.cardId) {
           state[key] = null;
         } else {
