@@ -237,6 +237,37 @@
     }
     .fav-toggle:hover { color: #f0c040; transform: scale(1.3); }
     .fav-toggle.active { color: #f0c040; }
+
+    /* ── Decklist ── */
+    .dl-upload-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .dl-status { font-size: 12px; color: var(--text2); margin-top: 8px; line-height: 1.5; }
+    .dl-status .warn { color: var(--accent); }
+    .dl-active-row { display: flex; gap: 12px; margin-top: 14px; }
+    .dl-slot { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+    .dl-slot-label { font-family: 'Bebas Neue', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2); }
+    .dl-slot-deck { font-family: 'Bebas Neue', sans-serif; font-size: 16px; font-weight: 700; }
+    .dl-slot-user { font-size: 12px; color: var(--text2); }
+    .dl-empty { color: var(--text2); font-size: 12px; }
+    .dl-slot-btns { display: flex; gap: 6px; margin-top: 4px; }
+    .dl-slot-btns button { font-size: 11px; padding: 5px 10px; }
+
+    dialog#deckPickerDialog {
+      width: min(480px, 92vw);
+      max-height: 80vh;
+      background: var(--bg1);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    dialog#deckPickerDialog::backdrop { background: rgba(0,0,0,0.6); }
+    .dl-picker-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .dl-picker-list { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; margin-top: 10px; }
+    .dl-picker-item { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; transition: border-color .15s, background .15s; }
+    .dl-picker-item:hover { background: var(--bg2); border-color: var(--border2); }
+    .dl-picker-item .dl-picker-user { font-family: 'Bebas Neue', sans-serif; font-size: 15px; font-weight: 700; }
+    .dl-picker-item .dl-picker-deck { font-size: 12px; color: var(--text2); }
+    .dl-picker-empty { color: var(--text2); font-size: 13px; text-align: center; padding: 20px 0; }
   </style>
 </head>
 <body>
@@ -439,6 +470,52 @@
     <div class="leg-results" id="legResults"></div>
   </div>
 </div>
+
+<!-- DECKLIST -->
+<div style="padding: 0 20px 20px;">
+  <div class="panel">
+    <div class="label" style="margin-bottom:12px;">Liste Mazzi</div>
+
+    <div class="dl-upload-row">
+      <input type="file" id="deckCsvInput" accept=".csv" style="display:none;"/>
+      <button class="btn-accent" id="deckCsvBtn">Carica CSV decklist</button>
+    </div>
+    <div class="dl-status" id="deckImportStatus">(nessun CSV caricato)</div>
+
+    <hr class="sep"/>
+
+    <div class="dl-active-row">
+      <div class="dl-slot">
+        <div class="dl-slot-label">Player A</div>
+        <div id="deckSlotA"><span class="dl-empty">(nessuna lista)</span></div>
+        <div class="dl-slot-btns">
+          <button class="btn-accent" id="deckPickA">Seleziona</button>
+          <button class="btn-danger" id="deckClearA">Rimuovi</button>
+        </div>
+      </div>
+      <div class="dl-slot">
+        <div class="dl-slot-label">Player B</div>
+        <div id="deckSlotB"><span class="dl-empty">(nessuna lista)</span></div>
+        <div class="dl-slot-btns">
+          <button class="btn-accent" id="deckPickB">Seleziona</button>
+          <button class="btn-danger" id="deckClearB">Rimuovi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog id="deckPickerDialog">
+  <div class="dl-picker-header">
+    <div class="label" id="deckPickerTitle">Seleziona lista</div>
+    <button id="deckPickerClose" style="padding:5px 10px; font-size:12px;">✕</button>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input id="deckPickerSearch" type="search" placeholder="Nome utente o mazzo…"/>
+  </div>
+  <div class="dl-picker-list" id="deckPickerList"></div>
+</dialog>
 
 <script type="module" src="/js/admin.js"></script>
 </body>

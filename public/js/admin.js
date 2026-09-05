@@ -14,6 +14,8 @@ const links = [
   { label: 'Battlefield B', path: 'obs-battlefield.html?player=B' },
   { label: 'Legend A',      path: 'obs-legend.html?player=A' },
   { label: 'Legend B',      path: 'obs-legend.html?player=B' },
+  { label: 'Decklist A',    path: 'obs-decklist.html?player=A' },
+  { label: 'Decklist B',    path: 'obs-decklist.html?player=B' },
   { label: 'Tablet',        path: 'tablet.html' },
 ];
 const linksRow = document.getElementById('linksRow');
@@ -208,6 +210,9 @@ function renderState(state) {
 
   updateLegSlot('A', state.legendA ?? null);
   updateLegSlot('B', state.legendB ?? null);
+
+  updateDeckSlot('A', state.deckA ?? null);
+  updateDeckSlot('B', state.deckB ?? null);
 }
 
 function tick() {
@@ -384,6 +389,100 @@ legSearchBtn.addEventListener('click', () => searchLegends(legSearchInput.value)
 legSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchLegends(legSearchInput.value); });
 document.getElementById('clearLegA').addEventListener('click', () => ws.send('legend:set', { who: 'A', cardId: null }));
 document.getElementById('clearLegB').addEventListener('click', () => ws.send('legend:set', { who: 'B', cardId: null }));
+
+// ── Decklist ──
+const deckCsvInput      = document.getElementById('deckCsvInput');
+const deckCsvBtn        = document.getElementById('deckCsvBtn');
+const deckImportStatus  = document.getElementById('deckImportStatus');
+const deckPickerDialog  = document.getElementById('deckPickerDialog');
+const deckPickerTitle   = document.getElementById('deckPickerTitle');
+const deckPickerSearch  = document.getElementById('deckPickerSearch');
+const deckPickerList    = document.getElementById('deckPickerList');
+
+let deckList = [];       // cache di /api/decks
+let deckPickerWho = 'A'; // slot correntemente in selezione
+
+deckCsvBtn.addEventListener('click', () => deckCsvInput.click());
+deckCsvInput.addEventListener('change', async () => {
+  const file = deckCsvInput.files?.[0];
+  if (!file) return;
+  deckImportStatus.textContent = 'Elaborazione CSV in corso… può richiedere qualche minuto.';
+  try {
+    const csvText = await file.text();
+    const { data } = await axios.post('/api/decks/import', csvText, {
+      headers: { 'Content-Type': 'text/csv' }
+    });
+    deckImportStatus.innerHTML = `${data.users} utenti importati · ${data.resolved}/${data.uniqueCards} carte risolte` +
+      (data.unresolved > 0 ? ` · <span class="warn">${data.unresolved} non trovate</span>` : '');
+    await loadDeckList();
+  } catch {
+    deckImportStatus.textContent = 'Errore durante l\'import del CSV.';
+  } finally {
+    deckCsvInput.value = '';
+  }
+});
+
+async function loadDeckList() {
+  try {
+    const { data } = await axios.get('/api/decks');
+    deckList = data || [];
+  } catch {
+    deckList = [];
+  }
+}
+
+function renderDeckPickerList(filter) {
+  const q = filter.trim().toLowerCase();
+  const items = q
+    ? deckList.filter(d => d.userLabel.toLowerCase().includes(q) || d.deckName.toLowerCase().includes(q))
+    : deckList;
+
+  deckPickerList.innerHTML = '';
+  if (items.length === 0) {
+    deckPickerList.innerHTML = '<div class="dl-picker-empty">Nessun risultato. Carica prima un CSV.</div>';
+    return;
+  }
+  for (const d of items) {
+    const div = document.createElement('div');
+    div.className = 'dl-picker-item';
+    div.innerHTML = `
+      <div class="dl-picker-user">${d.userLabel}</div>
+      <div class="dl-picker-deck">${d.deckName} · ${d.mainCount} carte${d.unresolvedCount ? ` · ${d.unresolvedCount} non risolte` : ''}</div>`;
+    div.addEventListener('click', () => {
+      ws.send('deck:set', { who: deckPickerWho, userId: d.userId });
+      deckPickerDialog.close();
+    });
+    deckPickerList.appendChild(div);
+  }
+}
+
+function openDeckPicker(who) {
+  deckPickerWho = who;
+  deckPickerTitle.textContent = `Seleziona lista — Player ${who}`;
+  deckPickerSearch.value = '';
+  renderDeckPickerList('');
+  deckPickerDialog.showModal();
+  deckPickerSearch.focus();
+}
+
+document.getElementById('deckPickA').addEventListener('click', () => openDeckPicker('A'));
+document.getElementById('deckPickB').addEventListener('click', () => openDeckPicker('B'));
+document.getElementById('deckPickerClose').addEventListener('click', () => deckPickerDialog.close());
+deckPickerSearch.addEventListener('input', () => renderDeckPickerList(deckPickerSearch.value));
+
+document.getElementById('deckClearA').addEventListener('click', () => ws.send('deck:set', { who: 'A', userId: null }));
+document.getElementById('deckClearB').addEventListener('click', () => ws.send('deck:set', { who: 'B', userId: null }));
+
+function updateDeckSlot(who, deck) {
+  const el = document.getElementById(`deckSlot${who}`);
+  if (deck) {
+    el.innerHTML = `<div class="dl-slot-deck">${deck.deckName}</div><div class="dl-slot-user">${deck.userLabel}</div>`;
+  } else {
+    el.innerHTML = `<span class="dl-empty">(nessuna lista)</span>`;
+  }
+}
+
+loadDeckList();
 
 // ── Assign helpers ──
 async function assignHighlight(c) {

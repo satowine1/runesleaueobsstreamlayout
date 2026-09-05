@@ -226,6 +226,16 @@ a.link-badge:hover { border-color: var(--accent); color: var(--accent); }
   from { opacity: 0; transform: translateY(16px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
+@keyframes hlOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-12px) scale(0.96); }
+}
+/* Wipe diagonale: rivela la nuova carta con un taglio obliquo che scorre da sinistra a destra,
+   coprendo quella precedente (rimasta ferma sotto). */
+@keyframes hlWipeIn {
+  0%   { clip-path: polygon(-60% 0%, -10% 0%, -30% 100%, -60% 100%); }
+  100% { clip-path: polygon(-60% 0%, 140% 0%, 120% 100%, -60% 100%); }
+}
 .obs-hl-img {
   width: 160px; height: 220px;
   object-fit: cover; display: block; flex-shrink: 0;

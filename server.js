@@ -16,6 +16,14 @@ import {
   setTimer
 } from './rooms.js';
 
+import {
+  parseDecksCsv,
+  buildDeckLibrary,
+  setDeckLibrary,
+  getDeck,
+  listDecks
+} from './decks.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
@@ -65,6 +73,26 @@ app.get('/api/proxy/cards/:cardId', async (req, res) => {
   }
 });
 
+// ── Import decklist CSV (export bulk Carde.io) ──
+app.post('/api/decks/import', express.text({ type: () => true, limit: '10mb' }), async (req, res) => {
+  try {
+    const rows = parseDecksCsv(String(req.body || ''));
+    if (rows.length === 0) {
+      res.status(400).json({ error: 'CSV vuoto o non valido' });
+      return;
+    }
+    const { library, summary } = await buildDeckLibrary(rows);
+    setDeckLibrary(library);
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({ error: 'import error' });
+  }
+});
+
+app.get('/api/decks', (_req, res) => {
+  res.json(listDecks());
+});
+
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server });
 
@@ -92,6 +120,8 @@ function roomSnapshot(roomId) {
     battlefieldB:  s.battlefieldB,
     legendA:       s.legendA,
     legendB:       s.legendB,
+    deckA:         s.deckA,
+    deckB:         s.deckB,
     timer: {
       running:   s.timer.running,
       direction: s.timer.direction,
@@ -214,6 +244,13 @@ wss.on('connection', (ws, req) => {
         }
         break;
       }
+      case 'deck:set': {
+        const who = msg.who === 'B' ? 'B' : 'A';
+        const key = `deck${who}`;
+        state[key] = msg.userId ? (getDeck(msg.userId) ?? null) : null;
+        broadcast(roomId);
+        break;
+      }
       case 'highlight:mode': {
         const allowed = ['tooltip', 'card', 'detail'];
         if (allowed.includes(msg.mode)) {
@@ -241,5 +278,7 @@ server.listen(PORT, () => {
   console.log(`  Score B:    http://localhost:${PORT}/obs-scoreB.html?room=ABCD`);
   console.log(`  Highlight:  http://localhost:${PORT}/obs-highlight.html?room=ABCD`);
   console.log(`  Bfield A:   http://localhost:${PORT}/obs-battlefield.html?player=A&room=ABCD`);
-  console.log(`  Bfield B:   http://localhost:${PORT}/obs-battlefield.html?player=B&room=ABCD\n`);
+  console.log(`  Bfield B:   http://localhost:${PORT}/obs-battlefield.html?player=B&room=ABCD`);
+  console.log(`  Decklist A: http://localhost:${PORT}/obs-decklist.html?player=A&room=ABCD`);
+  console.log(`  Decklist B: http://localhost:${PORT}/obs-decklist.html?player=B&room=ABCD\n`);
 });

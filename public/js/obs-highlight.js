@@ -5,6 +5,8 @@ let currentId   = null;
 let currentMode = null;
 const root = document.getElementById('hlRoot');
 
+const WIPE_MS = 550;
+
 function render(state) {
   const card = state.highlightCard;
   const mode = state.highlightMode ?? 'card';
@@ -14,17 +16,42 @@ function render(state) {
   currentId   = id;
   currentMode = mode;
 
-  if (!card) { root.innerHTML = ''; return; }
+  swapTo(card ? buildHtml(card, mode) : '');
+}
 
+function buildHtml(card, mode) {
   switch (mode) {
-    case 'tooltip': renderTooltip(card); break;
-    case 'detail':  renderDetail(card);  break;
-    default:        renderCard(card);    break;
+    case 'tooltip': return tooltipHtml(card);
+    case 'detail':  return detailHtml(card);
+    default:        return cardHtml(card);
   }
 }
 
-function renderTooltip(card) {
-  root.innerHTML = `
+// ── Wipe diagonale: la nuova carta entra sopra, rivelandosi con un taglio obliquo
+//    che scorre da sinistra a destra e copre quella precedente (ferma sotto). ──
+function swapTo(html) {
+  const oldEl = root.firstElementChild;
+
+  if (oldEl) {
+    oldEl.style.position = 'absolute';
+    oldEl.style.top = '0';
+    oldEl.style.left = '0';
+    oldEl.style.margin = '0';
+    oldEl.style.animation = 'none';
+    setTimeout(() => oldEl.remove(), WIPE_MS + 50);
+  }
+
+  if (!html) return;
+
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html.trim();
+  const newEl = tmp.firstElementChild;
+  newEl.style.animation = `hlWipeIn ${WIPE_MS}ms cubic-bezier(0.65, 0, 0.35, 1) both`;
+  root.appendChild(newEl);
+}
+
+function tooltipHtml(card) {
+  return `
     <div class="obs-hl-wrap">
       <img class="obs-hl-img" src="${card.image}" alt="">
       <div class="obs-hl-info">
@@ -34,14 +61,14 @@ function renderTooltip(card) {
     </div>`;
 }
 
-function renderCard(card) {
-  root.innerHTML = `
+function cardHtml(card) {
+  return `
     <div class="obs-hl-card-only">
       <img src="${card.image}" alt="">
     </div>`;
 }
 
-function renderDetail(card) {
+function detailHtml(card) {
   const metaItems = [card.faction, card.rarity].filter(Boolean);
   const metaHtml = metaItems.length
     ? `<div class="obs-hl-meta">${metaItems.map(m => `<span class="obs-hl-badge">${m}</span>`).join('')}</div>`
@@ -63,7 +90,7 @@ function renderDetail(card) {
   const descHtml   = card.description ? `<div class="obs-hl-description">${card.description}</div>` : '';
   const flavorHtml = card.flavorText  ? `<div class="obs-hl-flavor">${card.flavorText}</div>`        : '';
 
-  root.innerHTML = `
+  return `
     <div class="obs-hl-wrap">
       <img class="obs-hl-img" src="${card.image}" alt="">
       <div class="obs-hl-info detail">

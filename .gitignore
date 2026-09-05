@@ -1,2 +1,4 @@
 node_modules/
 .env
+CONTEXT.md
+decks.csv

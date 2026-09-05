@@ -11,6 +11,8 @@ export function createRoomState() {
     battlefieldB: null,
     legendA: null,
     legendB: null,
+    deckA: null,
+    deckB: null,
     timer: {
       running: false,
       startEpochMs: null,
