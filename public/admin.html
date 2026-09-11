@@ -283,6 +283,29 @@
     }
     .status-dot.ok   { background: var(--green); box-shadow: 0 0 4px var(--green); }
     .status-dot.down { background: var(--red);   box-shadow: 0 0 4px var(--red); }
+
+    /* ── Stile Decklist ── */
+    .ds-grid { display: flex; flex-direction: column; gap: 8px; }
+    .ds-head, .ds-row {
+      display: grid; grid-template-columns: 110px 1fr 1fr; gap: 10px; align-items: center;
+    }
+    .ds-head span {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text2);
+    }
+    .ds-zone-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+    }
+    .ds-input {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px; font-weight: 700;
+      background: var(--bg1); border: 1px solid var(--border2);
+      border-radius: 8px; padding: 7px 10px; color: var(--text);
+      outline: none; transition: border-color .15s; width: 100%;
+    }
+    .ds-input:focus { border-color: var(--accent); }
   </style>
 </head>
 <body>
@@ -516,6 +539,41 @@
           <button class="btn-accent" id="deckPickB">Seleziona</button>
           <button class="btn-danger" id="deckClearB">Rimuovi</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DECKLIST STYLE -->
+<div style="padding: 0 20px 20px;">
+  <div class="panel">
+    <div class="label" style="margin-bottom:12px;">Stile Decklist</div>
+    <div class="ds-grid" id="deckStyleGrid">
+      <div class="ds-head"><span></span><span>Dimensione (px)</span><span>Interlinea (px)</span></div>
+      <div class="ds-row" data-zone="legend">
+        <span class="ds-zone-label">Legend</span>
+        <input type="number" class="ds-input" data-field="size" min="20" max="400"/>
+        <input type="number" class="ds-input" data-field="gap" min="0" max="100"/>
+      </div>
+      <div class="ds-row" data-zone="champion">
+        <span class="ds-zone-label">Champion</span>
+        <input type="number" class="ds-input" data-field="size" min="20" max="400"/>
+        <input type="number" class="ds-input" data-field="gap" min="0" max="100"/>
+      </div>
+      <div class="ds-row" data-zone="main">
+        <span class="ds-zone-label">Deck</span>
+        <input type="number" class="ds-input" data-field="size" min="20" max="400"/>
+        <input type="number" class="ds-input" data-field="gap" min="0" max="100"/>
+      </div>
+      <div class="ds-row" data-zone="battlefield">
+        <span class="ds-zone-label">Battlefield</span>
+        <input type="number" class="ds-input" data-field="size" min="20" max="400"/>
+        <input type="number" class="ds-input" data-field="gap" min="0" max="100"/>
+      </div>
+      <div class="ds-row" data-zone="rune">
+        <span class="ds-zone-label">Rune</span>
+        <input type="number" class="ds-input" data-field="size" min="20" max="400"/>
+        <input type="number" class="ds-input" data-field="gap" min="0" max="100"/>
       </div>
     </div>
   </div>

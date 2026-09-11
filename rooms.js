@@ -1,4 +1,16 @@
 // rooms.js
+export const DECK_STYLE_ZONES = ['legend', 'champion', 'main', 'battlefield', 'rune'];
+
+export function createDefaultDeckStyle() {
+  return {
+    legend:      { size: 130, gap: 12 },
+    champion:    { size: 130, gap: 12 },
+    main:        { size: 72,  gap: 6 },
+    battlefield: { size: 72,  gap: 6 },
+    rune:        { size: 72,  gap: 6 },
+  };
+}
+
 export function createRoomState() {
   return {
     scoreA: 0,
@@ -13,6 +25,7 @@ export function createRoomState() {
     legendB: null,
     deckA: null,
     deckB: null,
+    deckStyle: createDefaultDeckStyle(),
     timer: {
       running: false,
       startEpochMs: null,

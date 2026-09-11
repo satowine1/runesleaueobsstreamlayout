@@ -77,19 +77,27 @@ function pickImage(card) {
   };
 }
 
+// Nomi campione: Carde.io usa la virgola ("Akshan, Mischievous"), Riftcodex il trattino
+// ("Akshan - Mischievous") per le carte Champion — si normalizzano entrambi prima del confronto.
+function normalizeCardName(name) {
+  return name.replace(/\s*,\s*/g, ' - ').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
 // ── Matching: Unit / Spell / Gear / Rune (main, rune_pool, sideboard, champion) ──
 async function resolveGeneric(name, setCode, rarity) {
   const tryQuery = (setId) => listCards({ q: name, setId, limit: 10 });
+  const target = normalizeCardName(name);
+  const matchesName = c => normalizeCardName(c.name) === target;
 
-  let candidates = (await tryQuery(setCode)).filter(c => c.name === name);
+  let candidates = (await tryQuery(setCode)).filter(matchesName);
 
   if (candidates.length === 0 && setCode.includes('-')) {
     const trimmedSet = setCode.split('-')[0];
-    candidates = (await tryQuery(trimmedSet)).filter(c => c.name === name);
+    candidates = (await tryQuery(trimmedSet)).filter(matchesName);
   }
 
   if (candidates.length === 0) {
-    candidates = (await tryQuery(undefined)).filter(c => c.name === name);
+    candidates = (await tryQuery(undefined)).filter(matchesName);
   }
 
   if (candidates.length === 0) return { image: '', resolved: false };

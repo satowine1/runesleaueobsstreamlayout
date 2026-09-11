@@ -12,7 +12,8 @@ import {
   startTimer,
   pauseTimer,
   resetTimer,
-  setTimer
+  setTimer,
+  DECK_STYLE_ZONES
 } from './rooms.js';
 
 import {
@@ -142,6 +143,7 @@ function roomSnapshot(roomId) {
     legendB:       s.legendB,
     deckA:         s.deckA,
     deckB:         s.deckB,
+    deckStyle:     s.deckStyle,
     timer: {
       running:   s.timer.running,
       direction: s.timer.direction,
@@ -268,6 +270,19 @@ wss.on('connection', (ws, req) => {
         const who = msg.who === 'B' ? 'B' : 'A';
         const key = `deck${who}`;
         state[key] = msg.userId ? (getDeck(msg.userId) ?? null) : null;
+        broadcast(roomId);
+        break;
+      }
+      case 'deck:style': {
+        const zone = msg.zone;
+        if (!DECK_STYLE_ZONES.includes(zone)) break;
+        const z = state.deckStyle[zone];
+        if (typeof msg.size === 'number' && !isNaN(msg.size)) {
+          z.size = Math.min(400, Math.max(20, Math.round(msg.size)));
+        }
+        if (typeof msg.gap === 'number' && !isNaN(msg.gap)) {
+          z.gap = Math.min(100, Math.max(0, Math.round(msg.gap)));
+        }
         broadcast(roomId);
         break;
       }

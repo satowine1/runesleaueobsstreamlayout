@@ -5,7 +5,14 @@
   <title>OBS Decklist</title>
   <style>
     body { background: transparent; margin: 0; padding: 0; }
-    #dlRoot { display: inline-block; }
+    #dlRoot {
+      display: inline-block;
+      --size-legend: 130px;      --gap-legend: 12px;
+      --size-champion: 130px;    --gap-champion: 12px;
+      --size-main: 72px;         --gap-main: 6px;
+      --size-battlefield: 72px;  --gap-battlefield: 6px;
+      --size-rune: 72px;         --gap-rune: 6px;
+    }
 
     .dl-wrap {
       display: flex;
@@ -18,11 +25,13 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Colonna sinistra: Legend + Champion ── */
+    /* ── Colonna sinistra: Legend + Champion (interlinea = margine sotto ogni tile) ── */
     .dl-left-col {
-      display: flex; flex-direction: column; gap: 12px;
+      display: flex; flex-direction: column;
       flex-shrink: 0;
     }
+    .dl-tile-legend   { margin-bottom: var(--gap-legend); }
+    .dl-tile-champion { margin-bottom: var(--gap-champion); }
 
     /* ── Colonna destra: Main list + (Battlefields / Rune) ── */
     .dl-right-col {
@@ -30,11 +39,12 @@
     }
     .dl-main-grid {
       display: flex; flex-wrap: wrap; align-content: flex-start;
-      gap: 6px;
+      gap: var(--gap-main);
       width: 480px;
     }
     .dl-bottom-row { display: flex; gap: 24px; }
-    .dl-bf-group, .dl-rune-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dl-bf-group   { display: flex; flex-wrap: wrap; gap: var(--gap-battlefield); }
+    .dl-rune-group { display: flex; flex-wrap: wrap; gap: var(--gap-rune); }
 
     /* ── Tile generico (nessun crop: l'immagine mantiene le proporzioni native) ── */
     .dl-tile { position: relative; display: block; }
@@ -45,15 +55,16 @@
     .dl-tile-placeholder {
       display: block;
       border-radius: 8px;
+      aspect-ratio: 5 / 7;
       background: rgba(20,20,26,0.55);
       border: 1px solid rgba(255,255,255,0.12);
     }
 
-    .dl-tile-lg img, .dl-tile-lg .dl-tile-placeholder { width: 130px; }
-    .dl-tile-lg .dl-tile-placeholder { aspect-ratio: 5 / 7; }
-
-    .dl-tile-sm img, .dl-tile-sm .dl-tile-placeholder { width: 72px; }
-    .dl-tile-sm .dl-tile-placeholder { aspect-ratio: 5 / 7; }
+    .dl-tile-legend img, .dl-tile-legend .dl-tile-placeholder { width: var(--size-legend); }
+    .dl-tile-champion img, .dl-tile-champion .dl-tile-placeholder { width: var(--size-champion); }
+    .dl-tile-main img, .dl-tile-main .dl-tile-placeholder { width: var(--size-main); }
+    .dl-tile-battlefield img, .dl-tile-battlefield .dl-tile-placeholder { width: var(--size-battlefield); }
+    .dl-tile-rune img, .dl-tile-rune .dl-tile-placeholder { width: var(--size-rune); }
 
     .dl-qty {
       position: absolute; right: 2px; bottom: 2px;

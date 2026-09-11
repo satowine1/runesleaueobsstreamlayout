@@ -255,6 +255,8 @@ function renderState(state) {
 
   updateDeckSlot('A', state.deckA ?? null);
   updateDeckSlot('B', state.deckB ?? null);
+
+  renderDeckStyle(state.deckStyle);
 }
 
 function tick() {
@@ -528,6 +530,33 @@ function updateDeckSlot(who, deck) {
 }
 
 loadDeckList();
+
+// ── Stile Decklist (dimensione/interlinea per zona) ──
+const deckStyleRows = [...document.querySelectorAll('#deckStyleGrid .ds-row')];
+for (const row of deckStyleRows) {
+  const zone = row.dataset.zone;
+  const sizeInput = row.querySelector('[data-field="size"]');
+  const gapInput  = row.querySelector('[data-field="gap"]');
+  const sendStyle = () => {
+    ws.send('deck:style', { zone, size: Number(sizeInput.value), gap: Number(gapInput.value) });
+  };
+  sizeInput.addEventListener('blur', sendStyle);
+  gapInput.addEventListener('blur', sendStyle);
+  sizeInput.addEventListener('keydown', e => { if (e.key === 'Enter') { sendStyle(); sizeInput.blur(); } });
+  gapInput.addEventListener('keydown', e => { if (e.key === 'Enter') { sendStyle(); gapInput.blur(); } });
+}
+
+function renderDeckStyle(deckStyle) {
+  if (!deckStyle) return;
+  for (const row of deckStyleRows) {
+    const z = deckStyle[row.dataset.zone];
+    if (!z) continue;
+    const sizeInput = row.querySelector('[data-field="size"]');
+    const gapInput  = row.querySelector('[data-field="gap"]');
+    if (!sizeInput.matches(':focus')) sizeInput.value = z.size;
+    if (!gapInput.matches(':focus'))  gapInput.value  = z.gap;
+  }
+}
 
 // ── Assign helpers ──
 async function assignHighlight(c) {
