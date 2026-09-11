@@ -4,7 +4,6 @@ import http from 'http';
 import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import axios from 'axios';
 
 import {
   createRoomState,
@@ -24,6 +23,17 @@ import {
   listDecks
 } from './decks.js';
 
+import {
+  listProviders,
+  getActiveProvider,
+  setActiveProvider,
+  getFilters,
+  listCards,
+  searchTyped,
+  getCardDetail,
+  getHealth
+} from './providers.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
@@ -34,42 +44,52 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/vendor', express.static(path.join(__dirname, 'node_modules/axios/dist')));
 
-// ── RiftScribe proxy (evita CORS dal browser) ──
-const RIFTSCRIBE = 'https://riftscribe.gg';
-
+// ── Proxy carte multi-provider (evita CORS dal browser, normalizza Riftcodex/RiftScribe) ──
 app.get('/api/proxy/cards/filters', async (_req, res) => {
   try {
-    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/filters`);
-    res.json(data);
+    res.json(await getFilters());
   } catch (err) {
-    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+    res.status(502).json({ error: 'proxy error' });
   }
 });
 
 app.get('/api/proxy/cards', async (req, res) => {
   try {
-    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards`, { params: req.query });
-    res.json(data);
+    const { q, set_id, faction, limit } = req.query;
+    res.json(await listCards({ q, setId: set_id, faction, limit: limit ? Number(limit) : undefined }));
   } catch (err) {
-    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+    res.status(502).json({ error: 'proxy error' });
   }
 });
 
 app.get('/api/proxy/cards/search', async (req, res) => {
   try {
-    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/search`, { params: req.query });
-    res.json(data);
+    const { q, types, limit } = req.query;
+    res.json(await searchTyped({ q, types, limit: limit ? Number(limit) : undefined }));
   } catch (err) {
-    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+    res.status(502).json({ error: 'proxy error' });
   }
 });
 
 app.get('/api/proxy/cards/:cardId', async (req, res) => {
   try {
-    const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/${encodeURIComponent(req.params.cardId)}`);
-    res.json(data);
+    res.json(await getCardDetail(req.params.cardId));
   } catch (err) {
-    res.status(err.response?.status ?? 502).json({ error: 'proxy error' });
+    res.status(502).json({ error: 'proxy error' });
+  }
+});
+
+// ── Selezione provider (switch manuale Riftcodex/RiftScribe) ──
+app.get('/api/provider', (_req, res) => {
+  res.json({ active: getActiveProvider(), options: listProviders(), health: getHealth() });
+});
+
+app.post('/api/provider', (req, res) => {
+  try {
+    const active = setActiveProvider(req.body?.id);
+    res.json({ active, options: listProviders(), health: getHealth() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

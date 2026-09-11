@@ -1,7 +1,5 @@
-// decks.js — import CSV decklist da Carde.io + matching contro RiftScribe
-import axios from 'axios';
-
-const RIFTSCRIBE = 'https://riftscribe.gg';
+// decks.js — import CSV decklist da Carde.io + matching contro il provider carte attivo
+import { listCards, searchTyped, getCardDetail } from './providers.js';
 
 // ── CSV parsing (campi quotati, virgole/virgolette interne) ──
 function parseCsvLine(line) {
@@ -81,24 +79,17 @@ function pickImage(card) {
 
 // ── Matching: Unit / Spell / Gear / Rune (main, rune_pool, sideboard, champion) ──
 async function resolveGeneric(name, setCode, rarity) {
-  const tryQuery = async (params) => {
-    try {
-      const { data } = await axios.get(`${RIFTSCRIBE}/api/cards`, { params: { q: name, limit: 10, ...params } });
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
-  };
+  const tryQuery = (setId) => listCards({ q: name, setId, limit: 10 });
 
-  let candidates = (await tryQuery({ set_id: setCode })).filter(c => c.name === name);
+  let candidates = (await tryQuery(setCode)).filter(c => c.name === name);
 
   if (candidates.length === 0 && setCode.includes('-')) {
     const trimmedSet = setCode.split('-')[0];
-    candidates = (await tryQuery({ set_id: trimmedSet })).filter(c => c.name === name);
+    candidates = (await tryQuery(trimmedSet)).filter(c => c.name === name);
   }
 
   if (candidates.length === 0) {
-    candidates = (await tryQuery({})).filter(c => c.name === name);
+    candidates = (await tryQuery(undefined)).filter(c => c.name === name);
   }
 
   if (candidates.length === 0) return { image: '', resolved: false };
@@ -109,17 +100,8 @@ async function resolveGeneric(name, setCode, rarity) {
   return pickImage(preferred || candidates[0]);
 }
 
-// ── Matching: Legend / Battlefield (endpoint /search, nomi spesso diversi) ──
+// ── Matching: Legend / Battlefield (ricerca per tipo, nomi spesso diversi tra provider) ──
 async function resolveTyped(name, type, setCode) {
-  const tryQuery = async (q) => {
-    try {
-      const { data } = await axios.get(`${RIFTSCRIBE}/api/cards/search`, { params: { q, types: type, limit: 10 } });
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
-  };
-
   const attempts = [name];
   if (name.includes(',')) {
     const parts = name.split(',').map(s => s.trim()).filter(Boolean);
@@ -131,7 +113,7 @@ async function resolveTyped(name, type, setCode) {
 
   let candidates = [];
   for (const q of attempts) {
-    candidates = await tryQuery(q);
+    candidates = await searchTyped({ q, types: type, limit: 10 });
     if (candidates.length) break;
   }
   if (candidates.length === 0) return { image: '', resolved: false };
@@ -139,7 +121,7 @@ async function resolveTyped(name, type, setCode) {
   const chosen = candidates.find(c => c.set_id === setCode) || candidates[0];
   let image = chosen.thumbnail_url || '';
   try {
-    const { data: detail } = await axios.get(`${RIFTSCRIBE}/api/cards/${chosen.card_id}`);
+    const detail = await getCardDetail(chosen.card_id);
     image = detail.image_thumb?.large ?? detail.image_thumb?.medium ?? image;
   } catch { /* usa il thumbnail già ottenuto */ }
 

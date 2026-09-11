@@ -28,6 +28,47 @@ for (const l of links) {
   linksRow.appendChild(a);
 }
 
+// ── Provider carte (switch manuale Riftcodex/RiftScribe + pallino stato) ──
+const providerSwitchEl = document.getElementById('providerSwitch');
+const PROVIDER_HEALTH_POLL_MS = 15 * 60 * 1000; // 15 minuti
+
+function renderProviderSwitch(active, options, health) {
+  providerSwitchEl.innerHTML = '';
+  for (const p of options) {
+    const h = health?.[p.id];
+    const dotClass = h?.healthy === true ? 'ok' : h?.healthy === false ? 'down' : '';
+    const btn = document.createElement('button');
+    btn.className = `provider-btn${p.id === active ? ' active' : ''}`;
+    btn.innerHTML = `<span class="status-dot ${dotClass}"></span>${p.label}`;
+    btn.addEventListener('click', () => switchProvider(p.id));
+    providerSwitchEl.appendChild(btn);
+  }
+}
+
+async function switchProvider(id) {
+  try {
+    const { data } = await axios.post('/api/provider', { id });
+    renderProviderSwitch(data.active, data.options, data.health);
+    resetFilterSelect(filterSetEl);
+    resetFilterSelect(filterFaction1El);
+    resetFilterSelect(filterFaction2El);
+    await loadFilters();
+  } catch { /* switch fallito, lascia lo stato precedente */ }
+}
+
+function resetFilterSelect(select) {
+  while (select.options.length > 1) select.remove(1);
+}
+
+async function refreshProviderStatus() {
+  try {
+    const { data } = await axios.get('/api/provider');
+    renderProviderSwitch(data.active, data.options, data.health);
+  } catch { /* silently fail */ }
+}
+
+setInterval(refreshProviderStatus, PROVIDER_HEALTH_POLL_MS);
+
 // ── State ──
 let lastState = null, localDisplayMs = 0;
 
@@ -128,6 +169,7 @@ async function searchCards(query) {
     searchStatusEl.textContent = 'Errore durante la ricerca.';
   } finally {
     searchBtn.disabled = false;
+    refreshProviderStatus();
   }
 }
 
@@ -283,6 +325,7 @@ async function searchBattlefields(query) {
     bfStatusEl.textContent = 'Errore durante la ricerca.';
   } finally {
     bfSearchBtn.disabled = false;
+    refreshProviderStatus();
   }
 }
 
@@ -348,6 +391,7 @@ async function searchLegends(query) {
     legStatusEl.textContent = 'Errore durante la ricerca.';
   } finally {
     legSearchBtn.disabled = false;
+    refreshProviderStatus();
   }
 }
 
@@ -419,6 +463,7 @@ deckCsvInput.addEventListener('change', async () => {
     deckImportStatus.textContent = 'Errore durante l\'import del CSV.';
   } finally {
     deckCsvInput.value = '';
+    refreshProviderStatus();
   }
 });
 
@@ -607,6 +652,7 @@ document.querySelectorAll('.btn-dir').forEach(btn => {
 });
 
 // ── Search ──
+refreshProviderStatus();
 loadFilters();
 searchBtn.addEventListener('click', () => searchCards(searchInput.value));
 searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchCards(searchInput.value); });
